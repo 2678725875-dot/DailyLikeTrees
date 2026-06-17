@@ -1,0 +1,70 @@
+# ============================================================
+# DailyLikeTrees — .gitignore
+# ============================================================
+
+# ── Dependencies ──
+node_modules/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ── Build output ──
+frontend/dist/
+frontend/dist-ssr/
+*.local
+
+# ── Database & data (may contain user data) ──
+*.db
+*.sqlite3
+*.sqlite
+
+# ── Environment & secrets ──
+.env
+.env.*
+!.env.example
+
+# ── IDE & editors ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── OS generated ──
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Logs ──
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Claude Code local ──
+.claude/settings.local.json
+
+# ── Scratch / personal notes ──
+提示词暂存*
+TODO*.md
+*.tmp
+
+# ── Test coverage ──
+coverage/
+.nyc_output/
+htmlcov/
+.pytest_cache/
+
+# ── Misc ──
+*.bak
+*.orig
