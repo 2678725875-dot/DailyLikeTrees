@@ -1,7 +1,7 @@
 <template>
   <div class="settings-fab">
     <button class="fab-btn" @click="open = !open" title="设置">
-      ⚙
+      <IconSvg name="settings" :size="20" />
     </button>
 
     <Teleport to="body">
@@ -12,7 +12,8 @@
           <div class="setting-item">
             <span>主题</span>
             <button class="toggle-btn" @click="settings.toggleTheme()">
-              {{ settings.theme === 'dark' ? '🌙 深色' : '☀️ 浅色' }}
+              <IconSvg :name="settings.theme === 'dark' ? 'moon' : 'sun'" :size="14" />
+              {{ settings.theme === 'dark' ? '深色' : '浅色' }}
             </button>
           </div>
 
@@ -38,7 +39,8 @@
               :class="{ active: audio.isMuted }"
               @click="audio.toggleMute()"
             >
-              {{ audio.isMuted ? '🔇 已静音' : '🔊 未静音' }}
+              <IconSvg :name="audio.isMuted ? 'volume-off' : 'volume-on'" :size="14" />
+              {{ audio.isMuted ? '已静音' : '未静音' }}
             </button>
           </div>
 
@@ -53,6 +55,7 @@
 import { ref } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import { useAudioStore } from '../../stores/audio'
+import IconSvg from '../icons/IconSvg.vue'
 
 const settings = useSettingsStore()
 const audio = useAudioStore()
@@ -74,14 +77,16 @@ const open = ref(false)
   border-radius: 50%;
   background: var(--color-primary);
   color: white;
-  font-size: 20px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast);
 }
 
 .fab-btn:hover {
-  transform: scale(1.08);
+  transform: scale(1.05);
 }
 
 .settings-overlay {
@@ -101,19 +106,21 @@ const open = ref(false)
   width: 300px;
   max-width: 90vw;
   background: var(--color-bg);
-  border-radius: 16px 0 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   padding: 24px;
-  box-shadow: -4px -4px 20px rgba(0,0,0,0.1);
-  animation: slideUp 0.25s ease-out;
+  box-shadow: var(--shadow-md);
+  animation: drawer-slide-in 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes slideUp {
+@keyframes drawer-slide-in {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
 
 .settings-drawer h3 {
   margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: var(--fw-medium);
   color: var(--color-text);
 }
 
@@ -125,6 +132,7 @@ const open = ref(false)
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
   font-size: 14px;
+  font-weight: var(--fw-regular);
 }
 
 .volume-row {
@@ -139,20 +147,25 @@ const open = ref(false)
 }
 
 .volume-val {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   min-width: 28px;
+  font-variant-numeric: tabular-nums;
 }
 
 .toggle-btn {
-  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   background: var(--color-bg-secondary);
   color: var(--color-text);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: var(--fw-regular);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .toggle-btn.active {
@@ -166,10 +179,16 @@ const open = ref(false)
   width: 100%;
   padding: 10px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--color-bg-secondary);
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: var(--fw-regular);
   cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.close-drawer:hover {
+  background: var(--color-hover-bg);
 }
 </style>

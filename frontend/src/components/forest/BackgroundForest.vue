@@ -12,12 +12,12 @@
       <!-- Rain -->
       <template v-if="weather === 'rainy' || weather === 'thunderstorm'">
         <div class="rain-container">
-          <div v-for="i in (weather === 'thunderstorm' ? 120 : 60)" :key="i" class="raindrop" :style="rainStyle(i)" />
+          <div v-for="i in (weather === 'thunderstorm' ? 102 : 51)" :key="i" class="raindrop" :style="rainStyle(i)" />
         </div>
         <div v-if="weather === 'thunderstorm'" class="lightning-flash" :class="{ flash: lightningOn }" />
       </template>
       <!-- Sunny glow -->
-      <div v-if="weather === 'sunny'" class="sunny-glow" />
+      <div v-if="weather === 'sunny'" class="sunny-glow"><div></div></div>
       <!-- Cloudy veil -->
       <div v-if="weather === 'cloudy'" class="cloudy-veil">
         <div v-for="i in 6" :key="i" class="cloud-blob" :style="cloudStyle(i)" />
@@ -28,7 +28,9 @@
     <!-- Label -->
     <div class="bg-forest-label">
       {{ bgLabel }}
-      <button class="bg-close" @click="clearBg" title="取消背景">×</button>
+      <button class="bg-close" @click="clearBg" title="取消背景">
+        <IconSvg name="close" :size="12" />
+      </button>
     </div>
   </div>
 </template>
@@ -41,6 +43,7 @@ import type { TimeFilter, TerrainType, WeatherType } from '../../types/forest'
 import * as api from '../../services/api'
 import type { PlantedTree } from '../../types/tree'
 import IsometricGrid from './IsometricGrid.vue'
+import IconSvg from '../icons/IconSvg.vue'
 
 const store = useForestStore()
 
@@ -57,7 +60,6 @@ const bgLabel = computed(() => {
 })
 
 // Rain style generator – randomized per drop, stable via seed
-const rainStyles = ref<string[]>([])
 function rainStyle(i: number): Record<string, string> {
   // Pseudo-random from index
   const s = (i * 137.5 + 251.3) % 1000
@@ -73,25 +75,36 @@ function rainStyle(i: number): Record<string, string> {
 function cloudStyle(i: number): Record<string, string> {
   const s = (i * 251.3 + 137.5) % 1000
   return {
-    left: `${(s * 1.3) % 110 - 5}%`,
+    left: `${(s * 1.7) % 100}%`,
     top: `${5 + (s % 100) / 2.5}%`,
     width: `${100 + (s % 100) / 2}px`,
     height: `${24 + (s % 100) / 4}px`,
-    animationDuration: `${18 + (s % 100) / 5}s`,
-    animationDelay: `-${(s * 2.7) % 200 / 10}s`,
+    animationDuration: `${30 + (s % 100) / 3}s`,
+    animationDelay: `-${(s * 4.3) % 100}s`,
   }
 }
 
 function startLightning() {
   if (weather.value !== 'thunderstorm') return
-  lightningTimer = setInterval(() => {
+  function doFlash() {
+    if (weather.value !== 'thunderstorm') return
     lightningOn.value = true
-    setTimeout(() => { lightningOn.value = false }, 80 + Math.random() * 150)
-  }, 2000 + Math.random() * 5000)
+    setTimeout(() => {
+      lightningOn.value = false
+      if (Math.random() < 0.6) {
+        setTimeout(() => {
+          lightningOn.value = true
+          setTimeout(() => { lightningOn.value = false }, 40 + Math.random() * 80)
+        }, 80 + Math.random() * 120)
+      }
+    }, 50 + Math.random() * 100)
+    lightningTimer = setTimeout(doFlash, 2000 + Math.random() * 6000) as unknown as number
+  }
+  lightningTimer = setTimeout(doFlash, 1000 + Math.random() * 3000) as unknown as number
 }
 
 function stopLightning() {
-  if (lightningTimer) { clearInterval(lightningTimer); lightningTimer = null }
+  if (lightningTimer) { clearTimeout(lightningTimer as unknown as number); lightningTimer = null }
   lightningOn.value = false
 }
 
@@ -187,33 +200,74 @@ defineExpose({ setBg, clearBg })
 .raindrop {
   position: absolute;
   top: -30px;
-  width: 1.5px;
-  background: linear-gradient(180deg, transparent 0%, rgba(180,210,255,0.5) 30%, rgba(160,200,255,0.7) 100%);
-  border-radius: 0 0 2px 2px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent 0%, rgba(160,200,240,0.0) 20%, rgba(140,185,230,0.4) 60%, rgba(120,170,220,0.65) 100%);
+  border-radius: 0 0 1px 1px;
   animation: rain-fall linear infinite;
 }
 @keyframes rain-fall {
-  0% { transform: translateY(-30px) translateX(0); }
-  100% { transform: translateY(105vh) translateX(-12px); }
+  0% { transform: translateY(-30px) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(105vh) translateX(-15px); opacity: 0.3; }
 }
 
 /* Lightning */
 .lightning-flash {
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0);
-  transition: background 0.06s ease-out;
+  background: rgba(255,240,200,0);
+  transition: background 0.02s ease-out;
 }
 .lightning-flash.flash {
-  background: rgba(255,255,255,0.18);
-  transition: background 0.02s ease-in;
+  background: rgba(255,240,200,0.22);
+  transition: background 0.01s ease-in;
 }
 
 /* Sunny */
 .sunny-glow {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255,232,180,0.12) 0%, rgba(255,220,150,0.04) 40%, transparent 70%);
+  overflow: hidden;
+}
+.sunny-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 80% 10%, rgba(255,242,185,0.176) 0%, rgba(255,225,150,0.056) 45%, transparent 72%);
+}
+.sunny-glow::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -15%;
+  width: 180%;
+  height: 180%;
+  background:
+    linear-gradient(225deg,
+      rgba(255,248,215,0.128) 0%,
+      rgba(255,238,185,0.080) 18%,
+      rgba(255,228,165,0.032) 38%,
+      rgba(255,220,150,0.012) 58%,
+      transparent 78%
+    );
+  transform-origin: 85% 8%;
+  pointer-events: none;
+  filter: blur(2px);
+}
+.sunny-glow > div {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(230deg,
+      rgba(255,245,200,0.064) 0%,
+      rgba(255,235,180,0.024) 25%,
+      transparent 55%
+    );
+  transform-origin: 85% 8%;
+  pointer-events: none;
+  filter: blur(6px);
 }
 
 /* Cloudy */
@@ -224,13 +278,34 @@ defineExpose({ setBg, clearBg })
 }
 .cloud-blob {
   position: absolute;
-  background: rgba(200,205,220,0.18);
   border-radius: 50%;
   animation: cloud-drift linear infinite;
 }
+.cloud-blob::before,
+.cloud-blob::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+.cloud-blob::before {
+  width: 70%;
+  height: 120%;
+  top: -40%;
+  left: 15%;
+}
+.cloud-blob::after {
+  width: 55%;
+  height: 90%;
+  top: -25%;
+  right: 10%;
+}
+.cloud-blob {
+  background: rgba(200,205,220,0.18);
+}
 @keyframes cloud-drift {
-  0% { transform: translateX(-120px); }
-  100% { transform: translateX(calc(100vw + 120px)); }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(100vw); }
 }
 
 /* ── Contrast veil (between bg forest and main UI) ── */
@@ -272,11 +347,14 @@ defineExpose({ setBg, clearBg })
   border: none;
   background: none;
   color: var(--color-text-secondary);
-  font-size: 17px;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 2px;
   line-height: 1;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
 }
 .bg-close:hover {
   color: var(--color-text);

@@ -12,10 +12,12 @@
 
     <nav class="header-nav">
       <router-link to="/" class="nav-link" active-class="active">
-        <span>⏱</span> 专注
+        <IconSvg name="timer" :size="16" />
+        <span>专注</span>
       </router-link>
       <router-link to="/forest" class="nav-link" active-class="active">
-        <span>🌳</span> 森林
+        <IconSvg name="tree" :size="14" />
+        <span>森林</span>
       </router-link>
     </nav>
 
@@ -26,7 +28,7 @@
         @click="settings.toggleTheme()"
         :title="settings.theme === 'dark' ? '切换到浅色' : '切换到深色'"
       >
-        {{ settings.theme === 'dark' ? '☀' : '☾' }}
+        <IconSvg :name="settings.theme === 'dark' ? 'sun' : 'moon'" :size="18" />
       </button>
     </div>
   </header>
@@ -35,6 +37,7 @@
 <script setup lang="ts">
 import { useSettingsStore } from '../../stores/settings'
 import AudioControlPanel from '../audio/AudioControlPanel.vue'
+import IconSvg from '../icons/IconSvg.vue'
 const settings = useSettingsStore()
 </script>
 
@@ -50,8 +53,7 @@ const settings = useSettingsStore()
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-xs);
+  backdrop-filter: var(--blur-md);
 }
 
 .header-left {
@@ -68,40 +70,60 @@ const settings = useSettingsStore()
 
 .logo-text {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: var(--fw-semibold);
   color: var(--color-text);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
 }
 
 .header-nav {
   display: flex;
   gap: 4px;
+  position: relative;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 6px 14px;
-  border-radius: 16px;
+  border-radius: 8px;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: var(--fw-medium);
   color: var(--color-text-secondary);
-  transition: background 0.2s, color 0.2s;
+  transition: color var(--transition-base), background var(--transition-base);
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 16px;
+  height: 1.5px;
+  background: var(--color-primary);
+  transform: translateX(-50%) scaleX(0);
+  transition: transform var(--transition-base);
+  border-radius: 1px;
 }
 
 .nav-link:hover {
-  background: var(--color-hover-bg);
+  color: var(--color-text);
 }
 
 .nav-link.active {
-  background: var(--color-primary);
-  color: white;
+  color: var(--color-primary);
+}
+
+.nav-link.active::after {
+  transform: translateX(-50%) scaleX(1);
 }
 
 .header-right {
   display: flex;
   align-items: center;
+  gap: 4px;
 }
 
 .icon-btn {
@@ -109,14 +131,13 @@ const settings = useSettingsStore()
   height: 34px;
   border: none;
   border-radius: 50%;
-  background: var(--color-bg);
+  background: transparent;
   color: var(--color-text);
-  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: background var(--transition-fast);
 }
 
 .icon-btn:hover {

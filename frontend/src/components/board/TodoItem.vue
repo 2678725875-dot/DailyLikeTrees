@@ -6,7 +6,7 @@
       @click="store.toggleTodo(item.id)"
       title="切换完成状态"
     >
-      <span v-if="item.completed">✓</span>
+      <IconSvg v-if="item.completed" name="check" :size="12" />
     </button>
 
     <span
@@ -32,7 +32,7 @@
       @click="store.removeTodo(item.id)"
       title="删除"
     >
-      ×
+      <IconSvg name="close" :size="14" />
     </button>
   </li>
 </template>
@@ -41,6 +41,7 @@
 import { ref, nextTick } from 'vue'
 import { useTodosStore } from '../../stores/todos'
 import type { TodoItem } from '../../types/todo'
+import IconSvg from '../icons/IconSvg.vue'
 
 const props = defineProps<{ item: TodoItem }>()
 const store = useTodosStore()
@@ -74,28 +75,27 @@ function cancelEdit() {
   gap: 10px;
   padding: 10px 14px;
   background: var(--color-bg-secondary);
-  border-radius: 10px;
-  transition: background 0.2s;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
 }
 
 .todo-item.completed {
-  opacity: 0.55;
+  opacity: 0.45;
 }
 
 .check-btn {
-  width: 22px;
-  height: 22px;
-  border: 2px solid var(--color-border);
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--color-border);
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
   color: white;
   flex-shrink: 0;
-  transition: background 0.2s, border-color 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .check-btn.checked {
@@ -106,6 +106,7 @@ function cancelEdit() {
 .todo-content {
   flex: 1;
   font-size: 14px;
+  font-weight: var(--fw-regular);
   color: var(--color-text);
   cursor: default;
 }
@@ -119,7 +120,7 @@ function cancelEdit() {
   flex: 1;
   padding: 4px 8px;
   border: 1px solid var(--color-primary);
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   font-size: 14px;
   background: var(--color-bg);
   color: var(--color-text);
@@ -131,15 +132,14 @@ function cancelEdit() {
   height: 24px;
   border: none;
   background: transparent;
-  color: var(--color-text-secondary);
-  font-size: 18px;
+  color: var(--color-text-tertiary);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s, color 0.2s;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
 }
 
 .todo-item:hover .delete-btn {
@@ -147,6 +147,6 @@ function cancelEdit() {
 }
 
 .delete-btn:hover {
-  color: var(--color-danger, #e74c3c);
+  color: var(--color-danger);
 }
 </style>

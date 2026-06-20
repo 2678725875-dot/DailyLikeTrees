@@ -56,8 +56,15 @@ pnpm-debug.log*
 
 # ── Scratch / personal notes ──
 提示词暂存*
+主创意文档*
 TODO*.md
 *.tmp
+
+# ── Screenshots ──
+screenshots/
+
+# ── Claude Code (except checked-in CLAUDE.md) ──
+.claude/
 
 # ── Test coverage ──
 coverage/

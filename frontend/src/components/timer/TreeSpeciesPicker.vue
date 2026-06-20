@@ -11,10 +11,12 @@
             :class="{ selected: species.id === store.selectedSpeciesId }"
             @click="selectAndClose(species.id)"
           >
-            <svg width="56" height="56" viewBox="0 0 48 48">
-              <rect x="22" y="28" width="4" height="14" rx="1" :fill="species.color" />
-              <circle cx="24" cy="18" r="14" :fill="species.color" opacity="0.8" />
-            </svg>
+            <img
+              :src="getSpeciesPreviewPath(species.id)"
+              :alt="species.name"
+              class="species-preview-img"
+              width="44" height="44"
+            />
             <span class="species-name">{{ species.name }}</span>
             <span class="species-desc">{{ species.description }}</span>
           </button>
@@ -28,6 +30,7 @@
 <script setup lang="ts">
 import { useTimerStore } from '../../stores/timer'
 import { TREE_SPECIES } from '../../utils/constants'
+import { getSpeciesPreviewPath } from '../../utils/assetPaths'
 
 defineEmits(['close'])
 const store = useTimerStore()
@@ -51,42 +54,55 @@ function selectAndClose(id: string) {
 
 .modal-content {
   background: var(--color-bg);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: 28px;
-  max-width: 420px;
+  max-width: 600px;
   width: 90vw;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  box-shadow: var(--shadow-md);
 }
 
 .modal-title {
   margin: 0 0 20px;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: var(--fw-medium);
   text-align: center;
   color: var(--color-text);
 }
 
 .species-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.species-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.species-grid::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
 }
 
 .species-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 14px 8px;
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
+  gap: 3px;
+  padding: 8px 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: var(--color-bg-secondary);
   cursor: pointer;
   transition: border-color 0.2s, transform 0.15s;
 }
 
 .species-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  border-color: var(--color-primary);
 }
 
 .species-card.selected {
@@ -95,15 +111,22 @@ function selectAndClose(id: string) {
 }
 
 .species-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
   color: var(--color-text);
 }
 
+.species-preview-img {
+  image-rendering: auto;
+  object-fit: contain;
+}
+
 .species-desc {
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: var(--fw-light);
   color: var(--color-text-secondary);
   text-align: center;
+  line-height: 1.3;
 }
 
 .close-btn {
@@ -111,10 +134,16 @@ function selectAndClose(id: string) {
   margin: 20px auto 0;
   padding: 8px 28px;
   border: 1px solid var(--color-border);
-  border-radius: 20px;
+  border-radius: var(--radius-sm);
   background: var(--color-bg-secondary);
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: var(--fw-regular);
   cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.close-btn:hover {
+  background: var(--color-hover-bg);
 }
 </style>

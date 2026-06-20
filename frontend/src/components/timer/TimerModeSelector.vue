@@ -29,31 +29,39 @@ const modeOptions: { value: TimerMode; label: string }[] = [
 <style scoped>
 .mode-selector {
   display: flex;
-  gap: 4px;
-  background: var(--color-bg-secondary);
-  border-radius: 20px;
-  padding: 3px;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 .mode-btn {
-  padding: 6px 16px;
+  padding: 6px 14px;
   border: none;
-  border-radius: 18px;
+  border-right: 1px solid var(--color-border);
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: all var(--transition-fast);
+}
+
+.mode-btn:last-child {
+  border-right: none;
 }
 
 .mode-btn.active {
   background: var(--color-primary);
   color: white;
-  font-weight: 600;
+}
+
+.mode-btn:hover:not(.active):not(:disabled) {
+  background: var(--color-hover-bg);
 }
 
 .mode-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 </style>

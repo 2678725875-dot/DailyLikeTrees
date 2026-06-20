@@ -6,7 +6,7 @@
     </Transition>
 
     <div class="forest-header">
-      <h2>🌳 我的专注森林</h2>
+      <h2><IconSvg name="tree" :size="22" /> 我的专注森林</h2>
       <p class="forest-stats" v-if="!store.loading">
         已种下 <strong>{{ store.stats.count }}</strong> 棵树，
         累计专注 <strong>{{ store.stats.total_minutes }}</strong> 分钟
@@ -31,7 +31,8 @@
         @click="setAsBackground"
         :title="bgFilter === store.timeFilter ? '已设为此森林为背景' : '将此森林设为主页背景'"
       >
-        {{ bgFilter === store.timeFilter ? '✅ 已设背景' : '🖼 设为背景' }}
+        <IconSvg :name="bgFilter === store.timeFilter ? 'check-filled' : 'image'" :size="14" />
+        {{ bgFilter === store.timeFilter ? '已设背景' : '设为背景' }}
       </button>
     </div>
 
@@ -57,7 +58,7 @@
     <!-- Terrain & weather selectors -->
     <div class="config-row">
       <div class="config-group">
-        <label>🏞 地形</label>
+        <label><IconSvg name="landscape" :size="14" /> 地形</label>
         <div class="chip-row">
           <button
             v-for="(label, t) in TERRAIN_LABELS"
@@ -71,7 +72,7 @@
         </div>
       </div>
       <div class="config-group">
-        <label>🌤 天气</label>
+        <label><IconSvg name="cloud" :size="14" /> 天气</label>
         <div class="chip-row">
           <button
             v-for="(label, w) in WEATHER_LABELS"
@@ -96,6 +97,7 @@ import { useAudioEngine } from '../composables/useAudioEngine'
 import { TIME_FILTER_LABELS, TERRAIN_LABELS, WEATHER_LABELS } from '../types/forest'
 import type { TerrainType, WeatherType, TimeFilter } from '../types/forest'
 import IsometricGrid from '../components/forest/IsometricGrid.vue'
+import IconSvg from '../components/icons/IconSvg.vue'
 
 const store = useForestStore()
 const audioStore = useAudioStore()
@@ -179,6 +181,10 @@ watch(() => audioStore.isMuted, (muted) => {
   engine.setMasterVolume(muted ? 0 : audioStore.masterVolume)
 })
 
+watch(() => audioStore.ambianceEnabled, () => {
+  updateAmbiance()
+})
+
 // ── Lifecycle ──
 
 onMounted(async () => {
@@ -200,7 +206,8 @@ function setAsBackground() {
 }
 
 onUnmounted(() => {
-  engine.dispose()
+  // Keep ambiance playing across views — playAmbiance() handles diff
+  // when the destination view calls updateAmbiance()
 })
 </script>
 
@@ -219,13 +226,19 @@ onUnmounted(() => {
 
 .forest-header h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
+  font-weight: var(--fw-medium);
   color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .forest-stats {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: var(--fw-light);
   color: var(--color-text-secondary);
 }
 
@@ -236,14 +249,18 @@ onUnmounted(() => {
 }
 
 .filter-btn {
-  padding: 6px 18px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .filter-btn.active {
@@ -253,7 +270,6 @@ onUnmounted(() => {
 }
 
 .bg-set-btn {
-  border-style: dashed;
   font-size: 12px;
 }
 
@@ -261,7 +277,6 @@ onUnmounted(() => {
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
-  border-style: solid;
 }
 
 /* Toast */
@@ -274,18 +289,18 @@ onUnmounted(() => {
   background: var(--color-primary);
   color: white;
   padding: 10px 24px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  box-shadow: var(--shadow-md);
   pointer-events: none;
 }
 
 .toast-enter-active {
-  transition: all 0.3s ease-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .toast-leave-active {
-  transition: all 0.25s ease-in;
+  transition: all 0.2s ease-in;
 }
 .toast-enter-from {
   opacity: 0;
@@ -299,10 +314,10 @@ onUnmounted(() => {
 .forest-canvas-wrapper {
   position: relative;
   min-height: 320px;
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-bg-secondary);
-  border: 1.5px solid var(--color-border);
+  border: 1px solid var(--color-border);
 }
 
 .loading-overlay,
@@ -314,8 +329,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: var(--fw-light);
   gap: 8px;
+  pointer-events: none;
 }
 
 .sub-hint {
@@ -339,9 +356,14 @@ onUnmounted(() => {
 }
 
 .config-group label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
   color: var(--color-text-secondary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .chip-row {
@@ -352,12 +374,17 @@ onUnmounted(() => {
 .chip {
   padding: 6px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: var(--radius-sm);
   background: var(--color-bg-secondary);
   color: var(--color-text);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
+}
+
+.chip:hover:not(.active) {
+  border-color: var(--color-primary);
 }
 
 .chip.active {

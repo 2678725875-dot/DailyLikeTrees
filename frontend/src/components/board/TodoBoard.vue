@@ -11,7 +11,8 @@
     </ul>
 
     <p v-else-if="!store.loading" class="empty-hint">
-      暂无待办，添加一个吧 ✨
+      <IconSvg name="sparkle" :size="16" />
+      暂无待办，添加一个吧
     </p>
 
     <TodoAddForm />
@@ -23,6 +24,7 @@ import { onMounted } from 'vue'
 import { useTodosStore } from '../../stores/todos'
 import TodoItem from './TodoItem.vue'
 import TodoAddForm from './TodoAddForm.vue'
+import IconSvg from '../icons/IconSvg.vue'
 
 const store = useTodosStore()
 
@@ -39,10 +41,12 @@ onMounted(() => {
 }
 
 .board-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 16px;
 }
 
 .todo-list {
@@ -51,13 +55,17 @@ onMounted(() => {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .empty-hint {
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  padding: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  font-weight: var(--fw-light);
+  padding: 24px 0;
 }
 </style>

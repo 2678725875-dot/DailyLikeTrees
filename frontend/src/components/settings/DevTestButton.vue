@@ -1,6 +1,7 @@
 <template>
   <button class="dev-btn" @click="quickPlant" :disabled="planting" title="开发者测试：快速种树">
-    {{ planting ? '🌱...' : '🧪 测试种树' }}
+    <IconSvg :name="planting ? 'tree' : 'sparkle'" :size="14" />
+    {{ planting ? '种植中...' : '测试种树' }}
   </button>
 </template>
 
@@ -9,12 +10,13 @@ import { ref } from 'vue'
 import { completeSession } from '../../services/api'
 import { useTimerStore } from '../../stores/timer'
 import { useForestStore } from '../../stores/forest'
+import IconSvg from '../icons/IconSvg.vue'
 
 const store = useTimerStore()
 const forestStore = useForestStore()
 const planting = ref(false)
 
-const SPECIES = ['oak', 'pine', 'cherry', 'bonsai']
+const SPECIES = Array.from({ length: 37 }, (_, i) => `tree${i + 1}`)
 const DURATIONS = [10, 20, 35, 65]  // minutes → different growth stages
 
 async function quickPlant() {
@@ -53,15 +55,19 @@ async function quickPlant() {
   bottom: 20px;
   left: 20px;
   z-index: 300;
-  padding: 8px 16px;
-  border: 1px dashed var(--color-border);
-  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
   font-size: 12px;
+  font-weight: var(--fw-regular);
   cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.2s;
+  opacity: 0.7;
+  transition: all var(--transition-fast);
 }
 
 .dev-btn:hover {

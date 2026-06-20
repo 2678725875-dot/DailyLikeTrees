@@ -92,7 +92,7 @@
     <!-- Celebration toast -->
     <Transition name="celebrate">
       <div v-if="showCelebration" class="celebration-toast" @click="showCelebration = false">
-        <span class="celebration-emoji">🎉</span>
+        <IconSvg name="sparkle" :size="18" class="celebration-icon" />
         <span>种下了一棵 {{ plantedLabel }}！</span>
       </div>
     </Transition>
@@ -107,6 +107,7 @@ import { useTimerStore } from '../../stores/timer'
 import { useSettingsStore } from '../../stores/settings'
 import { TREE_SPECIES } from '../../utils/constants'
 import { getGrowthLabel, getGrowthStage } from '../../utils/treeGrowth'
+import IconSvg from '../icons/IconSvg.vue'
 import TimerDisplay from './TimerDisplay.vue'
 import TreePreview from './TreePreview.vue'
 import TimerModeSelector from './TimerModeSelector.vue'
@@ -129,7 +130,16 @@ const MAX_MINUTES = 120
 // ── Colors ──
 
 const colors: Record<string, string> = {
-  oak: '#6B8E23', pine: '#2E8B57', cherry: '#FF7B9C', bonsai: '#7CB342',
+  tree1: '#6B8E23', tree2: '#1B5E20', tree3: '#F5F5F5', tree4: '#FFB7C5',
+  tree5: '#5DAE5F', tree6: '#C0392B', tree7: '#D4A017', tree8: '#2E7D32',
+  tree9: '#F9A825', tree10: '#D84315', tree11: '#E65100', tree12: '#BF360C',
+  tree13: '#1B5E20', tree14: '#D7CCC8', tree15: '#B3E5FC', tree16: '#81D4FA',
+  tree17: '#ECEFF1', tree18: '#795548', tree19: '#F48FB1', tree20: '#FF8F00',
+  tree21: '#43A047', tree22: '#9B3A6A', tree23: '#66BB6A', tree24: '#2E7D32',
+  tree25: '#A5D6A7', tree26: '#388E3C', tree27: '#FFB300', tree28: '#FFC107',
+  tree29: '#FF8F00', tree30: '#D4524B', tree31: '#E65100', tree32: '#C62828',
+  tree33: '#E1F5FE', tree34: '#EF5350', tree35: '#558B2F', tree36: '#4CAF50',
+  tree37: '#C0CA33',
 }
 
 const trackColor = computed(() =>
@@ -294,15 +304,16 @@ watch(() => store.isCompleted, (completed) => {
 }
 
 .btn {
-  padding: 10px 32px;
+  padding: 10px 28px;
   border: none;
-  border-radius: 24px;
-  font-size: 16px;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: var(--fw-medium);
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: all var(--transition-fast);
 }
 
+.btn:hover { transform: translateY(-1px); }
 .btn:active { transform: scale(0.97); }
 .btn-start { background: var(--color-primary); color: white; }
 .btn-pause { background: var(--color-warning, #f0ad4e); color: white; }
@@ -318,15 +329,19 @@ watch(() => store.isCompleted, (completed) => {
   background: var(--color-primary);
   color: white;
   padding: 14px 28px;
-  border-radius: 28px;
-  font-size: 16px;
-  font-weight: 600;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: var(--fw-medium);
+  box-shadow: var(--shadow-md);
   z-index: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.celebration-icon {
+  color: white;
 }
 
 .celebration-emoji {

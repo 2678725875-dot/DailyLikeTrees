@@ -1,46 +1,31 @@
 /** Centralized asset path registry.
  *
  *  All sprite/audio paths flow through here.
- *  When real assets arrive, only this file needs to change.
+ *  Tree sprites use a variant system: each species has N variant PNGs;
+ *  growth stage is conveyed via sprite scale, not separate images.
  */
+
+import { TREE_SPECIES } from './constants'
+
+function buildSpeciesPaths(speciesId: string, variantCount: number): string[] {
+  return Array.from({ length: variantCount }, (_, i) =>
+    `/assets/trees/species/${speciesId}/variant_${i}.png`
+  )
+}
+
+/** Build the species path map from TREE_SPECIES (single source of truth). */
+function buildSpeciesPathMap(): Record<string, string[]> {
+  const map: Record<string, string[]> = {}
+  for (const s of TREE_SPECIES) {
+    map[s.id] = buildSpeciesPaths(s.id, s.variantCount)
+  }
+  return map
+}
 
 export const ASSET_PATHS = {
   trees: {
     placeholder: '/assets/trees/placeholder-tree.svg',
-    species: {
-      oak: {
-        stages: [
-          '/assets/trees/species/oak/seed.png',
-          '/assets/trees/species/oak/sprout.png',
-          '/assets/trees/species/oak/sapling.png',
-          '/assets/trees/species/oak/mature.png',
-        ],
-      },
-      pine: {
-        stages: [
-          '/assets/trees/species/pine/seed.png',
-          '/assets/trees/species/pine/sprout.png',
-          '/assets/trees/species/pine/sapling.png',
-          '/assets/trees/species/pine/mature.png',
-        ],
-      },
-      cherry: {
-        stages: [
-          '/assets/trees/species/cherry/seed.png',
-          '/assets/trees/species/cherry/sprout.png',
-          '/assets/trees/species/cherry/sapling.png',
-          '/assets/trees/species/cherry/mature.png',
-        ],
-      },
-      bonsai: {
-        stages: [
-          '/assets/trees/species/bonsai/seed.png',
-          '/assets/trees/species/bonsai/sprout.png',
-          '/assets/trees/species/bonsai/sapling.png',
-          '/assets/trees/species/bonsai/mature.png',
-        ],
-      },
-    },
+    species: buildSpeciesPathMap(),
   },
   terrain: {
     plain: '/assets/terrain/plain.png',
@@ -69,9 +54,28 @@ export const ASSET_PATHS = {
   },
 } as const
 
-/** Given species ID and growth stage, return the asset path. */
-export function getTreeSpritePath(speciesId: string, stage: number): string {
-  const species = ASSET_PATHS.trees.species[speciesId as keyof typeof ASSET_PATHS.trees.species]
-  if (species?.stages[stage]) return species.stages[stage]
-  return ASSET_PATHS.trees.placeholder
+/** Backward-compatible mapping: old species IDs → new IDs. */
+const OLD_SPECIES_MAP: Record<string, string> = {
+  oak: 'tree8', pine: 'tree2', cherry: 'tree4', maple: 'tree10',
+  bonsai: 'tree19', frost: 'tree15',
+}
+
+/** Get all variant paths for a given species. */
+export function getSpeciesVariantPaths(speciesId: string): string[] {
+  const mapped = OLD_SPECIES_MAP[speciesId] ?? speciesId
+  const variants = ASSET_PATHS.trees.species[mapped as keyof typeof ASSET_PATHS.trees.species]
+  return (variants as string[]) ?? [ASSET_PATHS.trees.placeholder]
+}
+
+/** Pick a random variant path for a species (deterministic by seed). */
+export function getRandomVariantPath(speciesId: string, seed: number): string {
+  const variants = getSpeciesVariantPaths(speciesId)
+  const idx = seed % variants.length
+  return variants[idx] ?? ASSET_PATHS.trees.placeholder
+}
+
+/** Get the preview path for a species (first variant). */
+export function getSpeciesPreviewPath(speciesId: string): string {
+  const variants = getSpeciesVariantPaths(speciesId)
+  return variants[0] ?? ASSET_PATHS.trees.placeholder
 }

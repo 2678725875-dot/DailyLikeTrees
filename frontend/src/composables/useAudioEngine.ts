@@ -28,6 +28,7 @@ const audioBuffers = new Map<string, AudioBuffer>()
 
 let bgmSource: AudioBufferSourceNode | null = null
 let bgmGain: GainNode | null = null
+let currentBgmTrack: string | null = null
 
 export function useAudioEngine() {
   // ── Initialization (must be called from a user gesture) ──
@@ -121,6 +122,8 @@ export function useAudioEngine() {
 
   async function playBgm(trackKey: string): Promise<void> {
     if (!ctx || !masterGain.value) return
+    // Skip if the same track is already playing (avoids restart on view switch)
+    if (currentBgmTrack === trackKey && bgmSource) return
     stopBgm()
 
     const path = (ASSET_PATHS.audio.music as Record<string, string>)[trackKey]
@@ -139,12 +142,14 @@ export function useAudioEngine() {
 
     bgmSource.connect(bgmGain)
     bgmSource.start()
+    currentBgmTrack = trackKey
   }
 
   function stopBgm(): void {
     try { bgmSource?.stop() } catch { /* ok */ }
     bgmSource = null
     bgmGain = null
+    currentBgmTrack = null
   }
 
   // ── Master volume ──
@@ -168,6 +173,7 @@ export function useAudioEngine() {
   function dispose(): void {
     stopAllAmbiance()
     stopBgm()
+    currentBgmTrack = null
     ctx?.close()
     ctx = null
     masterGain.value = null

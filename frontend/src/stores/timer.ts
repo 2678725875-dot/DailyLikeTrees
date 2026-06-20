@@ -19,7 +19,7 @@ export const useTimerStore = defineStore('timer', () => {
   const status = ref<TimerStatus>('idle')
   const targetSeconds = ref(25 * 60)
   const elapsedSeconds = ref(0)
-  const selectedSpeciesId = ref('oak')
+  const selectedSpeciesId = ref('tree1')
   const currentSessionId = ref<number | null>(null)
 
   let startedAt: string | null = null

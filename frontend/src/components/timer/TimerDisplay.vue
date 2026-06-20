@@ -51,20 +51,22 @@ const statusClass = computed(() => ({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
 .mode-label {
   font-size: 11px;
+  font-weight: var(--fw-medium);
   color: var(--color-text-secondary);
-  letter-spacing: 1px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .time-text {
-  font-size: 38px;
-  font-weight: 700;
+  font-size: 48px;
+  font-weight: var(--fw-light);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 2px;
+  letter-spacing: -1px;
   color: var(--color-text);
   line-height: 1.1;
 }
@@ -72,17 +74,18 @@ const statusClass = computed(() => ({
 .running .time-text { color: var(--color-primary); }
 
 .paused .time-text {
-  opacity: 0.55;
+  opacity: 0.4;
   animation: blink 1.2s ease-in-out infinite;
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 0.55; }
+  0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
 }
 
 .free-hint {
   font-size: 11px;
+  font-weight: var(--fw-light);
   color: var(--color-text-secondary);
   opacity: 0.7;
   margin-top: 2px;
@@ -95,6 +98,7 @@ const statusClass = computed(() => ({
 
 .target-hint {
   font-size: 11px;
+  font-weight: var(--fw-light);
   color: var(--color-text-secondary);
   opacity: 0.6;
   margin-top: 2px;

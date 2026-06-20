@@ -24,7 +24,7 @@ import AppHeader from './AppHeader.vue'
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 16px 48px;
+  padding: 32px 24px 64px;
   position: relative;
   z-index: 1;
 }

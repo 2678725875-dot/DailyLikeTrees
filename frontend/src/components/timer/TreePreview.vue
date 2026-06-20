@@ -1,12 +1,11 @@
 <template>
   <div class="tree-preview" @click.stop="$emit('click')" title="点击选择树种">
-    <svg width="36" height="36" viewBox="0 0 48 48">
-      <rect x="22" y="28" width="4" height="14" rx="1" :fill="speciesColor" />
-      <circle cx="24" cy="18" r="14" :fill="speciesColor" opacity="0.8" />
-      <circle cx="16" cy="16" r="8" :fill="speciesColor" opacity="0.55" />
-      <circle cx="32" cy="16" r="8" :fill="speciesColor" opacity="0.55" />
-      <circle cx="24" cy="8" r="7" :fill="speciesColor" opacity="0.65" />
-    </svg>
+    <img
+      :src="previewPath"
+      :alt="speciesLabel"
+      class="preview-img"
+      width="36" height="36"
+    />
     <span class="species-label">{{ speciesLabel }}</span>
   </div>
 </template>
@@ -15,15 +14,13 @@
 import { computed } from 'vue'
 import { useTimerStore } from '../../stores/timer'
 import { TREE_SPECIES } from '../../utils/constants'
+import { getSpeciesPreviewPath } from '../../utils/assetPaths'
 
 defineEmits(['click'])
 
 const store = useTimerStore()
 
-const speciesColor = computed(() => {
-  const s = TREE_SPECIES.find(t => t.id === store.selectedSpeciesId)
-  return s?.color || '#6B8E23'
-})
+const previewPath = computed(() => getSpeciesPreviewPath(store.selectedSpeciesId))
 
 const speciesLabel = computed(() => {
   const s = TREE_SPECIES.find(t => t.id === store.selectedSpeciesId)
@@ -46,6 +43,11 @@ const speciesLabel = computed(() => {
 
 .tree-preview:hover {
   background: var(--color-hover-bg);
+}
+
+.preview-img {
+  image-rendering: auto;
+  object-fit: contain;
 }
 
 .species-label {
