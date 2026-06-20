@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="frontend/public/favicon.svg" alt="DailyLikeTrees Logo" width="120" />
+<img src="frontend/public/assets/logo.png" alt="DailyLikeTrees Logo" width="120" />
 
 # 🌳 DailyLikeTrees · 如树日常
 
@@ -30,14 +30,15 @@
 ## 🎯 核心功能
 
 - ⏱️ **智能计时器** — SVG 环形拖拽设时（15~120 分钟），支持倒计时 / 正计时 / 自由模式
-- 🌳 **专注森林** — PixiJS 驱动的等距（Isometric）森林渲染，树木从地块中生长而出
-- 🎨 **动态天气** — 晴天 · 多云 · 雨天 · 雷雨，全局天气效果覆盖整个界面
+- 🌳 **专注森林** — PixiJS 驱动的等距（Isometric）森林渲染，37 种树木精灵，动态黄金比例网格布局
+- ☀️ **精致天气系统** — 晴天（体积光束 + 丁达尔光尘）、多云（12 团蓬松积云）、雨天（涟漪水花）、雷雨（多层闪电），PixiJS + CSS 双层渲染
 - 🏔️ **多变地形** — 平原 / 溪流 / 山地，柏林噪声驱动的高低错落地块
-- 🎵 **环境音混音** — Web Audio API 多层环境音（雨声 / 溪流 / 风 / 森林）实时混合
-- 🎹 **BGM 播放** — 内置舒缓背景音乐，专注更沉浸
+- 🎵 **环境音混音** — Web Audio API 多层环境音（雨声 / 溪流 / 风 / 雷 / 森林）实时混合，跨页面无缝衔接
+- 🎹 **BGM 播放** — 内置舒缓背景音乐，专注更沉浸，跨页面不中断
 - 🌓 **深色 / 浅色主题** — 全局 CSS 自定义属性驱动，天气颜色随主题自适应
 - 📋 **待办记事** — 完整的 Todo CRUD，专注同时管理任务
 - 🖼️ **森林背景** — 将任意时间段的森林设为主页动态背景
+- 🎯 **矢量图标系统** — IconSvg 组件，统一管理应用图标
 - 📱 **PWA 就绪** — Hash 路由 + 响应式布局
 
 ---
@@ -51,6 +52,8 @@
 | 雨天效果 | 深色主题 |
 |:---:|:---:|
 | ![Rain](screenshots/rain.png) | ![Dark](screenshots/dark.png) |
+
+> 💡 运行 `npm run dev` 后在 http://localhost:5173 即可体验。
 
 ---
 
@@ -131,16 +134,19 @@ npm run build      # TypeScript 类型检查 + Vite 构建
 DailyLikeTrees/
 ├── frontend/                          # Vue 3 + Vite 前端
 │   ├── public/assets/
-│   │   └── audio/                     # 音频素材（环境音 + BGM）
-│   │       ├── ambiance/              # rain / thunder / creek / wind / forest
-│   │       └── music/                 # calm-1 / calm-2 / calm-3
+│   │   ├── audio/                     # 音频素材（环境音 + BGM）
+│   │   │   ├── ambiance/              # rain / thunder / creek / wind / forest
+│   │   │   └── music/                 # calm-1 / calm-2 / calm-3
+│   │   ├── trees/species/             # 37 种树木精灵（PNG）
+│   │   └── logo.png                  # 应用图标
 │   └── src/
 │       ├── components/
 │       │   ├── timer/                 # CircularTimer / TreePreview / TreeSpeciesPicker
 │       │   ├── board/                 # TodoBoard / TodoItem / TodoAddForm
-│       │   ├── forest/                # IsometricGrid / BackgroundForest / ForestStats ...
+│       │   ├── forest/                # IsometricGrid / BackgroundForest
 │       │   ├── audio/                 # AudioControlPanel
-│       │   ├── settings/              # SettingsPanel
+│       │   ├── icons/                 # IconSvg 矢量图标系统
+│       │   ├── settings/              # SettingsPanel / DevTestButton
 │       │   └── layout/                # AppShell / AppHeader
 │       ├── composables/               # useAudioEngine / useCircularTimer ...
 │       ├── stores/                    # Pinia: timer / todos / forest / audio / settings

@@ -2,10 +2,7 @@
   <header class="app-header">
     <div class="header-left">
       <router-link to="/" class="logo-link">
-        <svg width="28" height="28" viewBox="0 0 48 48">
-          <rect x="22" y="28" width="4" height="14" rx="1" fill="#6B8E23" />
-          <circle cx="24" cy="18" r="14" fill="#6B8E23" opacity="0.8" />
-        </svg>
+        <img src="/assets/logo.png" alt="DailyLikeTrees" width="40" height="40" class="logo-icon" />
         <span class="logo-text">DailyLikeTrees</span>
       </router-link>
     </div>
