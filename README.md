@@ -20,7 +20,7 @@
 
 ## ✨ 这是什么？
 
-**DailyLikeTrees（如树日常）** 是一款受 Forest专注森林 启发的多平台专注辅助应用。
+**DailyLikeTrees（如树日常）** 是一款受 Forest 专注森林启发的多平台专注辅助应用。
 
 设定一个专注目标 → 完成它 → 在你的等距「专注森林」中种下一棵树。日积月累，终成一片林。
 
@@ -30,31 +30,41 @@
 
 ## 🎯 核心功能
 
-- ⏱️ **智能计时器** — SVG 环形拖拽设时（15~120 分钟），支持倒计时 / 正计时 / 自由模式
-- 🌳 **专注森林** — PixiJS 驱动的等距（Isometric）森林渲染，37 种树木精灵，动态黄金比例网格布局
-- ☀️ **精致天气系统** — 晴天（体积光束 + 丁达尔光尘）、多云（12 团蓬松积云）、雨天（涟漪水花）、雷雨（多层闪电），PixiJS + CSS 双层渲染
-- 🏔️ **多变地形** — 平原 / 溪流 / 山地，柏林噪声驱动的高低错落地块
-- 🎵 **环境音混音** — Web Audio API 多层环境音（雨声 / 溪流 / 风 / 雷 / 森林）实时混合，跨页面无缝衔接
-- 🎹 **BGM 播放** — 内置舒缓背景音乐，专注更沉浸，跨页面不中断
+<table>
+<tr>
+<td width="50%">
+
+### ⏱️ 智能计时器
+SVG 环形拖拽设时（15~120 分钟），支持倒计时 / 正计时 / 自由模式。拖拽手感细腻，吸附常用时长。
+
+### 🌳 专注森林
+PixiJS WebGL 驱动的等距（Isometric）森林渲染，37 种树木精灵，动态黄金比例网格布局，树与树之间永不重叠。
+
+### ☀️ 精致天气系统
+晴天（体积光束 + 丁达尔光尘）、多云（蓬松积云）、雨天（涟漪水花）、雷雨（多层闪电），PixiJS + CSS 双层渲染。
+
+</td>
+<td width="50%">
+
+### 🏔️ 多变地形
+平原 / 溪流 / 山地三种地形，柏林噪声驱动的高低错落地块。切换地形时树木自动重新分布。
+
+### 🎵 环境音混音
+Web Audio API 多层环境音（雨声 / 溪流 / 风 / 雷 / 森林）实时混合，跨页面无缝衔接，音量独立可调。
+
+### 🎹 BGM 播放
+内置舒缓背景音乐，专注更沉浸。跨页面不中断，与系统音频独立控制。
+
+</td>
+</tr>
+</table>
+
+**更多特性：**
 - 🌓 **深色 / 浅色主题** — 全局 CSS 自定义属性驱动，天气颜色随主题自适应
-- 📋 **待办记事** — 完整的 Todo CRUD，专注同时管理任务
-- 🖼️ **森林背景** — 将任意时间段的森林设为主页动态背景
-- 🎯 **矢量图标系统** — IconSvg 组件，统一管理应用图标
-- 📱 **PWA 就绪** — Hash 路由 + 响应式布局
-
----
-
-## 🖼️ 预览
-
-| 主页（计时器 + 待办） | 专注森林（等距视图） |
-|:---:|:---:|
-| ![Home](screenshots/home.png) | ![Forest](screenshots/forest.png) |
-
-| 雨天效果 | 深色主题 |
-|:---:|:---:|
-| ![Rain](screenshots/rain.png) | ![Dark](screenshots/dark.png) |
-
-> 💡 运行 `npm run dev` 后在 http://localhost:5173 即可体验。
+- 📋 **待办记事** — 完整的 Todo CRUD，乐观更新 + 自动回滚，专注同时管理任务
+- 🖼️ **森林背景** — 将任意时间段的森林设为主页动态背景，低透明度 + 天气覆盖
+- 🎯 **矢量图标系统** — 统一 IconSvg 组件管理应用图标
+- 📱 **PWA 就绪** — Hash 路由 + 响应式布局，可安装到桌面
 
 ---
 
@@ -63,13 +73,13 @@
 | 层 | 技术 | 说明 |
 |----|------|------|
 | **前端框架** | Vue 3 + Composition API | `<script setup>` + TypeScript |
-| **状态管理** | Pinia | 5 个 Store 模块（timer/todos/forest/audio/settings） |
+| **状态管理** | Pinia | 5 个 Store 模块（timer / todos / forest / audio / settings） |
 | **构建工具** | Vite 8 | 极速 HMR |
 | **森林渲染** | PixiJS 7.4 | WebGL 等距 2D 渲染 |
 | **音频引擎** | Web Audio API | 多层环境音 + BGM 实时混音 |
 | **后端框架** | FastAPI | Python 异步 Web 框架 |
 | **数据库** | SQLite3 + SQLAlchemy | 轻量级，零配置 |
-| **类型验证** | Pydantic v2 | 请求/响应 Schema |
+| **类型验证** | Pydantic v2 | 请求 / 响应 Schema |
 | **桌面壳** | Tauri v2 | Rust + 系统 WebView，自动管理后端进程 |
 | **后端打包** | PyInstaller | 将 Python 后端编译为独立 exe |
 
@@ -128,11 +138,7 @@ npm run dev
 
 ```bash
 cd frontend
-
-# 安装前端依赖
 npm install
-
-# 启动桌面应用（自动启动 Vite + Python 后端）
 npx tauri dev
 ```
 
@@ -141,10 +147,8 @@ Tauri 桌面窗口会自动打开，Vite HMR 热更新即时生效。
 **生产构建：**
 
 ```bash
-cd frontend
-
 # 1. 构建 Python 后端为独立 exe
-cd ../backend
+cd backend
 pip install pyinstaller
 pyinstaller --onefile --name backend \
     --collect-all uvicorn --collect-all fastapi \
@@ -159,11 +163,10 @@ cd ../frontend
 npx tauri build
 ```
 
-构建产物位于 `frontend/src-tauri/target/release/bundle/`，包含 `.msi` 安装包。
-
-**便携式分发（无需安装包）：**
-
-将 `DailyLikeTrees.exe` 和 `backend.exe` 放在同一目录下，双击 `DailyLikeTrees.exe` 即可运行。数据自动保存在 `%APPDATA%/DailyLikeTrees/`。
+构建产物位于 `frontend/src-tauri/target/release/bundle/`，包含：
+- `DailyLikeTrees_*.msi` — Windows 安装包
+- `DailyLikeTrees_*-setup.exe` — NSIS 安装程序
+- `DailyLikeTrees_*.exe` — 便携版（与 `backend.exe` 同目录即可运行）
 
 > 📦 后端已通过 PyInstaller 打包为独立 exe，用户**无需安装 Python**。应用启动时自动拉起后端，关闭时自动清理。
 
@@ -187,9 +190,9 @@ DailyLikeTrees/
 │       │   ├── forest/                # IsometricGrid / BackgroundForest
 │       │   ├── audio/                 # AudioControlPanel
 │       │   ├── icons/                 # IconSvg 矢量图标系统
-│       │   ├── settings/              # SettingsPanel / DevTestButton
+│       │   ├── settings/              # SettingsPanel / DevToolsPanel
 │       │   └── layout/                # AppShell / AppHeader
-│       ├── composables/               # useAudioEngine / useCircularTimer ...
+│       ├── composables/               # useAudioEngine / useCircularTimer / useWeatherInfo …
 │       ├── stores/                    # Pinia: timer / todos / forest / audio / settings
 │       ├── services/                  # Axios API 封装
 │       ├── types/                     # TypeScript 类型定义
@@ -197,7 +200,7 @@ DailyLikeTrees/
 │       ├── views/                     # HomeView / ForestViewPage
 │       └── styles/                    # CSS 变量 / 主题 / 基础样式
 │   └── src-tauri/                     # Tauri v2 桌面壳
-│       ├── src/lib.rs                 # Rust：自动启动/停止后端进程
+│       ├── src/lib.rs                 # Rust：自动启动 / 停止后端进程
 │       ├── src/main.rs                # Windows 程序入口
 │       ├── tauri.conf.json            # 窗口尺寸 / CSP / 资源打包
 │       └── binaries/                  # backend.exe（PyInstaller 产物）
@@ -205,7 +208,7 @@ DailyLikeTrees/
 ├── backend/                           # FastAPI + SQLite3 后端
 │   ├── app/
 │   │   ├── models/                    # ORM: FocusSession / PlantedTree / Todo / UserSetting
-│   │   ├── schemas/                   # Pydantic 请求/响应模型
+│   │   ├── schemas/                   # Pydantic 请求 / 响应模型
 │   │   ├── routers/                   # sessions / trees / todos / settings
 │   │   ├── services/                  # 业务逻辑层
 │   │   └── utils/                     # 树木成长阶段计算
@@ -224,12 +227,12 @@ DailyLikeTrees/
 | `POST` | `/api/sessions` | 完成一次专注 → 种下一棵树 |
 | `GET` | `/api/sessions` | 获取最近会话列表 |
 | `GET` | `/api/trees?filter=today\|week\|month\|total` | 获取森林树木 + 统计 |
-| `GET/POST` | `/api/todos` | 待办列表 / 创建待办 |
-| `PATCH/DELETE` | `/api/todos/{id}` | 更新 / 删除待办 |
+| `GET` / `POST` | `/api/todos` | 待办列表 / 创建待办 |
+| `PATCH` / `DELETE` | `/api/todos/{id}` | 更新 / 删除待办 |
 | `PUT` | `/api/todos/reorder` | 重排待办顺序 |
-| `GET/PUT` | `/api/settings` | 读写用户设置 |
+| `GET` / `PUT` | `/api/settings` | 读写用户设置 |
 
-### 树木成长阶段 （目前对应贴图未完成 仅体现在树木大小）
+### 树木成长阶段
 
 | 专注时长 | 阶段 |
 |----------|------|
@@ -244,8 +247,6 @@ DailyLikeTrees/
 
 项目音频文件来自 [Freesound.org](https://freesound.org)，均为 CC0 许可。
 
-音频文件较大（~47MB），建议克隆后确认 `frontend/public/assets/audio/` 下的文件完整。
-
 如需替换为自己的音频：
 1. 将 MP3 文件放入对应目录（`ambiance/` 或 `music/`）
 2. 编辑 `frontend/src/utils/assetPaths.ts` 更新路径映射
@@ -257,7 +258,6 @@ DailyLikeTrees/
 
 欢迎提交 Issue 和 Pull Request！当前处于 Web MVP 阶段，后续计划包括：
 
-- [ ] 优化各类图片素材和用户交互界面美观性
 - [ ] 移动端适配（React Native / Flutter）
 - [ ] 多人专注房间
 - [ ] 更多树种 & 自定义森林主题
