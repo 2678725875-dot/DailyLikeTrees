@@ -44,7 +44,68 @@
             </button>
           </div>
 
+          <div class="setting-item">
+            <span>显示天气</span>
+            <button
+              class="toggle-btn"
+              :class="{ active: settings.weatherEnabled }"
+              @click="settings.toggleWeatherEnabled()"
+            >
+              <Eye v-if="settings.weatherEnabled" :size="14" />
+              <EyeOff v-else :size="14" />
+              {{ settings.weatherEnabled ? '开启' : '关闭' }}
+            </button>
+          </div>
+
+          <div class="setting-item">
+            <span>专注悬浮球</span>
+            <button
+              class="toggle-btn"
+              :class="{ active: settings.floatingBallEnabled }"
+              @click="settings.toggleFloatingBallEnabled()"
+            >
+              <IconSvg v-if="settings.floatingBallEnabled" name="timer" :size="14" />
+              <TimerOff v-else :size="14" />
+              {{ settings.floatingBallEnabled ? '开启' : '关闭' }}
+            </button>
+          </div>
+
+          <!-- Developer options toggle -->
+          <div class="setting-item">
+            <span>开发者选项</span>
+            <button
+              v-if="!settings.devMode"
+              class="toggle-btn dev-toggle"
+              @click="showDevConfirm = true"
+            >
+              <IconSvg name="sparkle" :size="14" />
+              开启
+            </button>
+            <span v-else class="dev-enabled-badge">
+              <IconSvg name="sparkle" :size="14" />
+              已开启
+            </span>
+          </div>
+
           <button class="close-drawer" @click="open = false">关闭</button>
+        </div>
+      </div>
+
+      <!-- Developer mode confirmation dialog -->
+      <div v-if="showDevConfirm" class="confirm-overlay" @click.self="showDevConfirm = false">
+        <div class="confirm-dialog">
+          <div class="confirm-icon">
+            <IconSvg name="sparkle" :size="28" />
+          </div>
+          <h4>开启开发者选项？</h4>
+          <p class="confirm-body">
+            开启后将在页面左下角显示测试工具，包括快速种树和清空树木等功能。
+            这些操作<strong>不可撤销</strong>，确定要继续吗？
+          </p>
+          <div class="confirm-actions">
+            <button class="confirm-btn cancel" @click="showDevConfirm = false">取消</button>
+            <button class="confirm-btn proceed" @click="confirmDevMode">确定开启</button>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -55,11 +116,18 @@
 import { ref } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import { useAudioStore } from '../../stores/audio'
+import { Eye, EyeOff, TimerOff } from '@lucide/vue'
 import IconSvg from '../icons/IconSvg.vue'
 
 const settings = useSettingsStore()
 const audio = useAudioStore()
 const open = ref(false)
+const showDevConfirm = ref(false)
+
+function confirmDevMode() {
+  settings.enableDevMode()
+  showDevConfirm.value = false
+}
 </script>
 
 <style scoped>
@@ -191,4 +259,112 @@ const open = ref(false)
 .close-drawer:hover {
   background: var(--color-hover-bg);
 }
+
+/* ── Developer toggle ── */
+.dev-toggle {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.dev-enabled-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: var(--fw-medium);
+}
+
+/* ── Confirmation dialog ── */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-dialog {
+  width: 360px;
+  max-width: 90vw;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: 28px 24px 20px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  animation: confirm-pop 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes confirm-pop {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.confirm-dialog h4 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+}
+
+.confirm-body {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.confirm-body strong {
+  color: var(--color-danger, #e05555);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.confirm-btn.cancel {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+.confirm-btn.cancel:hover {
+  background: var(--color-hover-bg);
+}
+
+.confirm-btn.proceed {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.confirm-btn.proceed:hover {
+  filter: brightness(1.08);
+}
+
 </style>

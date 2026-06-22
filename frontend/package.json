@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lucide/vue": "^1.21.0",
+    "@tauri-apps/api": "^2.11.1",
     "@vueuse/core": "^10.11.1",
     "axios": "^1.17.0",
     "pinia": "^2.3.1",
@@ -17,6 +19,7 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.3",
     "@types/node": "^24.12.3",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/tsconfig": "^0.9.1",

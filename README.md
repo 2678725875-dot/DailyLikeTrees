@@ -11,6 +11,7 @@
 [![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PixiJS](https://img.shields.io/badge/PixiJS-7.4-E72264?logo=pixiv&logoColor=white)](https://pixijs.com/)
+[![Tauri](https://img.shields.io/badge/Tauri-2.11-FFC131?logo=tauri&logoColor=white)](https://v2.tauri.app/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
@@ -69,6 +70,8 @@
 | **后端框架** | FastAPI | Python 异步 Web 框架 |
 | **数据库** | SQLite3 + SQLAlchemy | 轻量级，零配置 |
 | **类型验证** | Pydantic v2 | 请求/响应 Schema |
+| **桌面壳** | Tauri v2 | Rust + 系统 WebView，自动管理后端进程 |
+| **后端打包** | PyInstaller | 将 Python 后端编译为独立 exe |
 
 ---
 
@@ -117,14 +120,52 @@ npm run dev
 
 > ⚠️ 两个服务需要**同时运行**。前端的 API 请求通过 Vite 开发服务器代理到后端 8000 端口。
 
-### 4. 生产构建
+### 4. 桌面应用（Tauri v2）
+
+> 🖥️ 支持 Windows。项目已集成 Tauri v2，一键启动桌面窗口，无需手动管理前后端。
+
+**开发模式：**
 
 ```bash
 cd frontend
-npm run build      # TypeScript 类型检查 + Vite 构建
+
+# 安装前端依赖
+npm install
+
+# 启动桌面应用（自动启动 Vite + Python 后端）
+npx tauri dev
 ```
 
-构建产物在 `frontend/dist/` 目录下，可直接部署到任意静态托管服务。
+Tauri 桌面窗口会自动打开，Vite HMR 热更新即时生效。
+
+**生产构建：**
+
+```bash
+cd frontend
+
+# 1. 构建 Python 后端为独立 exe
+cd ../backend
+pip install pyinstaller
+pyinstaller --onefile --name backend \
+    --collect-all uvicorn --collect-all fastapi \
+    --collect-all sqlalchemy --collect-all aiosqlite \
+    run.py
+
+# 2. 复制 backend.exe 到 Tauri 资源目录
+cp dist/backend.exe ../frontend/src-tauri/binaries/backend.exe
+
+# 3. 构建 Tauri 桌面安装包
+cd ../frontend
+npx tauri build
+```
+
+构建产物位于 `frontend/src-tauri/target/release/bundle/`，包含 `.msi` 安装包。
+
+**便携式分发（无需安装包）：**
+
+将 `DailyLikeTrees.exe` 和 `backend.exe` 放在同一目录下，双击 `DailyLikeTrees.exe` 即可运行。数据自动保存在 `%APPDATA%/DailyLikeTrees/`。
+
+> 📦 后端已通过 PyInstaller 打包为独立 exe，用户**无需安装 Python**。应用启动时自动拉起后端，关闭时自动清理。
 
 ---
 
@@ -155,14 +196,20 @@ DailyLikeTrees/
 │       ├── utils/                     # 等距坐标 / 素材路径 / 树木生长 / 常量
 │       ├── views/                     # HomeView / ForestViewPage
 │       └── styles/                    # CSS 变量 / 主题 / 基础样式
+│   └── src-tauri/                     # Tauri v2 桌面壳
+│       ├── src/lib.rs                 # Rust：自动启动/停止后端进程
+│       ├── src/main.rs                # Windows 程序入口
+│       ├── tauri.conf.json            # 窗口尺寸 / CSP / 资源打包
+│       └── binaries/                  # backend.exe（PyInstaller 产物）
 │
 ├── backend/                           # FastAPI + SQLite3 后端
-│   └── app/
-│       ├── models/                    # ORM: FocusSession / PlantedTree / Todo / UserSetting
-│       ├── schemas/                   # Pydantic 请求/响应模型
-│       ├── routers/                   # sessions / trees / todos / settings
-│       ├── services/                  # 业务逻辑层
-│       └── utils/                     # 树木成长阶段计算
+│   ├── app/
+│   │   ├── models/                    # ORM: FocusSession / PlantedTree / Todo / UserSetting
+│   │   ├── schemas/                   # Pydantic 请求/响应模型
+│   │   ├── routers/                   # sessions / trees / todos / settings
+│   │   ├── services/                  # 业务逻辑层
+│   │   └── utils/                     # 树木成长阶段计算
+│   └── run.py                         # PyInstaller 入口脚本
 │
 ├── CLAUDE.md                          # Claude Code 项目指引
 └── README.md                          # 本文件

@@ -47,6 +47,26 @@
               {{ audio.ambianceEnabled ? '开启' : '关闭' }}
             </button>
           </div>
+          <div class="audio-sub-row">
+            <span class="sub-label">地形</span>
+            <button
+              class="mini-btn"
+              :class="{ on: audio.terrainEnabled }"
+              @click="audio.toggleTerrain()"
+            >
+              {{ audio.terrainEnabled ? '开启' : '关闭' }}
+            </button>
+          </div>
+          <div class="audio-sub-row">
+            <span class="sub-label">天气</span>
+            <button
+              class="mini-btn"
+              :class="{ on: audio.weatherEnabled }"
+              @click="audio.toggleWeather()"
+            >
+              {{ audio.weatherEnabled ? '开启' : '关闭' }}
+            </button>
+          </div>
 
           <!-- BGM selector -->
           <div class="audio-row">
@@ -103,7 +123,7 @@ function toggleMute() {
 }
 
 function toggleAmbiance() {
-  audio.ambianceEnabled = !audio.ambianceEnabled
+  audio.toggleAmbiance()
 }
 
 function selectBgm(key: string) {
@@ -177,10 +197,23 @@ function stopBgm() {
   border-bottom: 1px solid var(--color-border);
 }
 
+.audio-sub-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 4px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
 .row-label {
   font-size: 13px;
   font-weight: var(--fw-regular);
   color: var(--color-text);
+}
+
+.sub-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }
 
 .volume-row {

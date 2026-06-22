@@ -37,3 +37,16 @@ def get_trees(
         filter = "today"
     actual_key = _compute_filter_key(filter)
     return tree_service.get_trees_by_filter(db, actual_key)
+
+
+@router.delete("")
+def delete_trees(
+    filter: str = Query("today", description="Time filter: today, week, month, total"),
+    db: Session = Depends(get_db),
+):
+    """Delete all planted trees for a time period.  Developer tool only."""
+    if filter not in FILTER_KEYS:
+        filter = "today"
+    actual_key = _compute_filter_key(filter)
+    deleted = tree_service.delete_trees_by_filter(db, actual_key)
+    return {"deleted": deleted}

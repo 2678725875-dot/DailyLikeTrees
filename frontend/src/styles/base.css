@@ -27,6 +27,12 @@ body {
   background: var(--color-bg);
 }
 
+/* Tauri frameless window: transparent background for custom rounded corners */
+html.tauri-app,
+html.tauri-app body {
+  background: transparent;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -47,10 +53,10 @@ input, textarea {
   color: white;
 }
 
-/* Scrollbar */
+/* Scrollbar — hidden by default, visible on hover */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 0px;
+  height: 0px;
 }
 
 ::-webkit-scrollbar-track {
@@ -58,12 +64,38 @@ input, textarea {
 }
 
 ::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+}
+
+body:hover ::-webkit-scrollbar,
+*:hover::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+body:hover ::-webkit-scrollbar-thumb,
+*:hover::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-tertiary);
+}
+
+/* Hide the ugly Windows window-resize grip (bottom-right corner) in Tauri */
+html.tauri-app body {
+  overflow: hidden;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+html.tauri-app * {
+  scrollbar-width: none;
 }
 
 /* Focus ring */
@@ -71,4 +103,11 @@ input, textarea {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: var(--radius-xs);
+}
+
+/* Lucide icon vertical alignment fix */
+svg.lucide {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
 }

@@ -15,6 +15,11 @@ env/
 frontend/dist/
 frontend/dist-ssr/
 *.local
+backend/build/
+backend/dist/
+backend/*.spec
+frontend/src-tauri/binaries/
+frontend/src-tauri/target/
 
 # ── Database & data (may contain user data) ──
 *.db
@@ -59,6 +64,10 @@ pnpm-debug.log*
 主创意文档*
 TODO*.md
 *.tmp
+
+# ── Portable distribution zip ──
+DailyLikeTrees-portable.zip
+dist-portable/
 
 # ── Screenshots ──
 screenshots/

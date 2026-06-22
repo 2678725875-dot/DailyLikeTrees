@@ -58,7 +58,7 @@
     <!-- Terrain & weather selectors -->
     <div class="config-row">
       <div class="config-group">
-        <label><IconSvg name="landscape" :size="14" /> 地形</label>
+        <label><Mountain :size="14" /> 地形</label>
         <div class="chip-row">
           <button
             v-for="(label, t) in TERRAIN_LABELS"
@@ -67,12 +67,13 @@
             :class="{ active: store.terrain === t }"
             @click="onTerrainChange(t)"
           >
+            <component :is="TERRAIN_ICONS[t]" :size="14" />
             {{ label }}
           </button>
         </div>
       </div>
       <div class="config-group">
-        <label><IconSvg name="cloud" :size="14" /> 天气</label>
+        <label><Cloud :size="14" /> 天气</label>
         <div class="chip-row">
           <button
             v-for="(label, w) in WEATHER_LABELS"
@@ -81,6 +82,7 @@
             :class="{ active: store.weather === w }"
             @click="onWeatherChange(w)"
           >
+            <component :is="WEATHER_ICONS[w]" :size="14" />
             {{ label }}
           </button>
         </div>
@@ -90,18 +92,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useForestStore } from '../stores/forest'
-import { useAudioStore } from '../stores/audio'
-import { useAudioEngine } from '../composables/useAudioEngine'
 import { TIME_FILTER_LABELS, TERRAIN_LABELS, WEATHER_LABELS } from '../types/forest'
 import type { TerrainType, WeatherType, TimeFilter } from '../types/forest'
+import {
+  TreePine, Waves, Tent,
+  Sun, CloudFog, CloudRain, CloudLightning,
+} from '@lucide/vue'
 import IsometricGrid from '../components/forest/IsometricGrid.vue'
 import IconSvg from '../components/icons/IconSvg.vue'
 
 const store = useForestStore()
-const audioStore = useAudioStore()
-const engine = useAudioEngine()
+
+// Lucide icons for terrain & weather chip buttons
+const TERRAIN_ICONS: Record<string, any> = { plain: TreePine, creek: Waves, mountain: Tent }
+const WEATHER_ICONS: Record<string, any> = { sunny: Sun, cloudy: CloudFog, rainy: CloudRain, thunderstorm: CloudLightning }
 
 // Background feedback state
 const bgFilter = ref<string | null>(localStorage.getItem('bgForest'))
@@ -119,38 +125,12 @@ window.addEventListener('bg-forest-update', () => {
   bgFilter.value = localStorage.getItem('bgForest')
 })
 
-// ── Terrain + Weather → Ambiance mapping ──
-
-function getAmbianceKeys(terrain: TerrainType, weather: WeatherType): string[] {
-  const keys: string[] = []
-  // Terrain sounds
-  if (terrain === 'creek') keys.push('creek')
-  if (terrain === 'mountain') keys.push('wind')
-  // Weather sounds
-  if (weather === 'rainy') keys.push('rain')
-  if (weather === 'thunderstorm') keys.push('thunder')
-  // Default forest ambient when nothing else
-  if (keys.length === 0) keys.push('forest')
-  return keys
-}
-
-async function updateAmbiance() {
-  if (!audioStore.ambianceEnabled) {
-    engine.stopAllAmbiance()
-    return
-  }
-  const keys = getAmbianceKeys(store.terrain, store.weather)
-  await engine.playAmbiance(keys)
-}
-
 function onTerrainChange(t: TerrainType) {
   store.setTerrain(t)
-  updateAmbiance()
 }
 
 function onWeatherChange(w: WeatherType) {
   store.setWeather(w)
-  updateAmbiance()
 }
 
 function onFilterClick(key: TimeFilter) {
@@ -161,41 +141,10 @@ function onFilterClick(key: TimeFilter) {
   }
 }
 
-// ── BGM watcher ──
-
-watch(() => audioStore.currentBgmTrack, async (track) => {
-  if (track) {
-    await engine.playBgm(track)
-  } else {
-    engine.stopBgm()
-  }
-})
-
-// ── Volume watcher ──
-
-watch(() => audioStore.masterVolume, (vol) => {
-  engine.setMasterVolume(audioStore.isMuted ? 0 : vol)
-})
-
-watch(() => audioStore.isMuted, (muted) => {
-  engine.setMasterVolume(muted ? 0 : audioStore.masterVolume)
-})
-
-watch(() => audioStore.ambianceEnabled, () => {
-  updateAmbiance()
-})
-
 // ── Lifecycle ──
 
-onMounted(async () => {
+onMounted(() => {
   store.fetchTrees()
-  // Init audio engine on first user interaction
-  await engine.init()
-  engine.setMasterVolume(audioStore.masterVolume)
-  // Start with default ambiance
-  if (audioStore.ambianceEnabled) {
-    await updateAmbiance()
-  }
 })
 
 function setAsBackground() {
@@ -205,10 +154,6 @@ function setAsBackground() {
   window.dispatchEvent(new CustomEvent('bg-forest-update'))
 }
 
-onUnmounted(() => {
-  // Keep ambiance playing across views — playAmbiance() handles diff
-  // when the destination view calls updateAmbiance()
-})
 </script>
 
 <style scoped>
@@ -381,6 +326,9 @@ onUnmounted(() => {
   font-weight: var(--fw-medium);
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .chip:hover:not(.active) {

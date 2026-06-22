@@ -3,7 +3,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'http://127.0.0.1:8000',
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
 })
@@ -31,6 +31,10 @@ export function getSessions(limit = 20, offset = 0) {
 
 export function getTrees(filter: string = 'today') {
   return api.get('/api/trees', { params: { filter } })
+}
+
+export function deleteTrees(filter: string = 'today') {
+  return api.delete('/api/trees', { params: { filter } })
 }
 
 // ── Todos ──

@@ -123,18 +123,30 @@ function clearBg() {
   emitWeather()
 }
 
-async function loadBgTrees() {
+async function loadBgTrees(retries = 2) {
   if (!bgFilter.value) return
-  try {
-    const { data } = await api.getTrees(bgFilter.value)
-    trees.value = data.trees
-    terrain.value = store.terrain
-    weather.value = store.weather
-    // Restart lightning if thunderstorm
-    stopLightning()
-    if (weather.value === 'thunderstorm') startLightning()
-    emitWeather()
-  } catch { trees.value = [] }
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const { data } = await api.getTrees(bgFilter.value)
+      trees.value = data.trees
+      terrain.value = store.terrain
+      weather.value = store.weather
+      // Sync stats to the forest store so the status bar updates
+      store.stats = data.stats
+      // Restart lightning if thunderstorm
+      stopLightning()
+      if (weather.value === 'thunderstorm') startLightning()
+      emitWeather()
+      return
+    } catch {
+      if (attempt < retries) {
+        // Backend may still be starting — wait before retry
+        await new Promise(r => setTimeout(r, 800))
+      } else {
+        trees.value = []
+      }
+    }
+  }
 }
 
 watch(() => [store.terrain, store.weather], () => {

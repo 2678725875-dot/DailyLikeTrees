@@ -13,6 +13,9 @@ class SettingsUpdate(BaseModel):
     ambiance_enabled: Optional[bool] = None
     default_timer_mode: Optional[str] = None
     default_species_id: Optional[str] = None
+    dev_mode: Optional[bool] = None
+    weather_enabled: Optional[bool] = None
+    floating_ball_enabled: Optional[bool] = None
 
 
 class SettingsResponse(BaseModel):
@@ -22,4 +25,7 @@ class SettingsResponse(BaseModel):
     ambiance_enabled: bool = True
     default_timer_mode: str = "countdown"
     default_species_id: str = "oak"
+    dev_mode: bool = False
+    weather_enabled: bool = True
+    floating_ball_enabled: bool = False
     updated_at: Optional[datetime] = None

@@ -15,6 +15,9 @@ DEFAULTS = {
     "ambiance_enabled": "true",
     "default_timer_mode": "countdown",
     "default_species_id": "oak",
+    "dev_mode": "false",
+    "weather_enabled": "true",
+    "floating_ball_enabled": "false",
 }
 
 

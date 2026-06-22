@@ -40,11 +40,15 @@ export const ASSET_PATHS = {
   },
   audio: {
     ambiance: {
+      // Terrain layer
+      plain: '/assets/audio/ambiance/plain.mp3',
       creek: '/assets/audio/ambiance/creek.mp3',
-      rain: '/assets/audio/ambiance/rain.mp3',
-      thunder: '/assets/audio/ambiance/thunder.mp3',
-      wind: '/assets/audio/ambiance/wind.mp3',
-      forest: '/assets/audio/ambiance/forest-ambient.mp3',
+      mountain: '/assets/audio/ambiance/mountain.mp3',
+      // Weather layer
+      sunny: '/assets/audio/ambiance/sunny.mp3',
+      cloudy: '/assets/audio/ambiance/cloudy.mp3',
+      rain: '/assets/audio/ambiance/rainny_day.mp3',
+      thunder: '/assets/audio/ambiance/thunder_rain.mp3',
     },
     music: {
       calm1: '/assets/audio/music/calm-1.mp3',

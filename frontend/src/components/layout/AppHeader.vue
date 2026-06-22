@@ -1,10 +1,7 @@
 <template>
   <header class="app-header">
     <div class="header-left">
-      <router-link to="/" class="logo-link">
-        <img src="/assets/logo.png" alt="DailyLikeTrees" width="40" height="40" class="logo-icon" />
-        <span class="logo-text">DailyLikeTrees</span>
-      </router-link>
+      <WeatherStatus :showWeather="settings.weatherEnabled" />
     </div>
 
     <nav class="header-nav">
@@ -34,6 +31,7 @@
 <script setup lang="ts">
 import { useSettingsStore } from '../../stores/settings'
 import AudioControlPanel from '../audio/AudioControlPanel.vue'
+import WeatherStatus from './WeatherStatus.vue'
 import IconSvg from '../icons/IconSvg.vue'
 const settings = useSettingsStore()
 </script>
@@ -56,20 +54,17 @@ const settings = useSettingsStore()
 .header-left {
   display: flex;
   align-items: center;
+  min-width: 180px;
 }
 
-.logo-link {
+.header-placeholder {
   display: flex;
   align-items: center;
-  gap: 8px;
-  text-decoration: none;
-}
-
-.logo-text {
-  font-size: 16px;
-  font-weight: var(--fw-semibold);
-  color: var(--color-text);
-  letter-spacing: -0.5px;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: .02em;
 }
 
 .header-nav {

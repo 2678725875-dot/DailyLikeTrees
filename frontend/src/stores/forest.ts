@@ -1,15 +1,28 @@
 /** Forest view store. */
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { PlantedTree } from '../types/tree'
 import type { TerrainType, WeatherType, TimeFilter, ForestStats } from '../types/forest'
 import * as api from '../services/api'
 
+const STORAGE_KEY = 'dlt_forest_prefs'
+
+function loadForestPrefs(): { terrain?: TerrainType; weather?: WeatherType } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
 export const useForestStore = defineStore('forest', () => {
+  const saved = loadForestPrefs()
+
   const trees = ref<PlantedTree[]>([])
-  const terrain = ref<TerrainType>('plain')
-  const weather = ref<WeatherType>('sunny')
+  const terrain = ref<TerrainType>(saved.terrain ?? 'plain')
+  const weather = ref<WeatherType>(saved.weather ?? 'sunny')
   const timeFilter = ref<TimeFilter>('today')
   const stats = ref<ForestStats>({ count: 0, total_minutes: 0 })
   const loading = ref(false)
@@ -45,6 +58,17 @@ export const useForestStore = defineStore('forest', () => {
   function setWeather(w: WeatherType) {
     weather.value = w
   }
+
+  // ── Persist terrain & weather ──
+
+  function persistForestPrefs() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      terrain: terrain.value,
+      weather: weather.value,
+    }))
+  }
+
+  watch([terrain, weather], () => persistForestPrefs())
 
   return {
     trees, terrain, weather, timeFilter, stats, loading, forceRefresh,

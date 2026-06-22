@@ -30,6 +30,10 @@ let bgmSource: AudioBufferSourceNode | null = null
 let bgmGain: GainNode | null = null
 let currentBgmTrack: string | null = null
 
+/** Generation counter — invalidates stale async loads when a new
+ *  playAmbiance / stopAllAmbiance call arrives mid-flight. */
+let playGeneration = 0
+
 export function useAudioEngine() {
   // ── Initialization (must be called from a user gesture) ──
 
@@ -71,6 +75,7 @@ export function useAudioEngine() {
   // ── Ambiance layers ──
 
   function stopAllAmbiance(): void {
+    playGeneration++  // invalidate any in-flight async loads
     for (const [key, layer] of activeLayers) {
       try { layer.source?.stop() } catch { /* already stopped */ }
       activeLayers.delete(key)
@@ -79,6 +84,9 @@ export function useAudioEngine() {
 
   async function playAmbiance(keys: string[]): Promise<void> {
     if (!ctx || !masterGain.value) return
+
+    // Bump generation — in-flight async loads from previous calls are now stale
+    const gen = ++playGeneration
 
     // Stop layers no longer needed
     for (const [key, layer] of activeLayers) {
@@ -97,6 +105,10 @@ export function useAudioEngine() {
 
       const buffer = await loadBuffer(path)
       if (!buffer) continue
+
+      // Guard: discard if a newer playAmbiance / stopAllAmbiance has been called
+      // while we were loading the buffer
+      if (gen !== playGeneration) return
 
       const source = ctx.createBufferSource()
       source.buffer = buffer

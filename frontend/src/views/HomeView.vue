@@ -26,40 +26,53 @@
       <span class="status-divider">·</span>
       <span class="status-value">{{ modeLabel }}</span>
       <span class="status-divider">·</span>
-      <span class="status-value">已种 {{ forestStore.stats.count }} 棵</span>
+      <span class="status-value">{{ statsFilterLabel }} 已种 {{ forestStore.stats.count }} 棵</span>
     </div>
 
     <CircularTimer />
 
     <TodoBoard />
     <SettingsPanel />
-    <DevTestButton />
+    <DevToolsPanel v-if="settings.devMode" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useForestStore } from '../stores/forest'
-import { useAudioStore } from '../stores/audio'
 import { useTimerStore } from '../stores/timer'
-import { useAudioEngine } from '../composables/useAudioEngine'
-import type { WeatherType, TerrainType } from '../types/forest'
+import type { WeatherType, TimeFilter } from '../types/forest'
+import { TIME_FILTER_LABELS } from '../types/forest'
+import * as api from '../services/api'
 import CircularTimer from '../components/timer/CircularTimer.vue'
 import TodoBoard from '../components/board/TodoBoard.vue'
 import SettingsPanel from '../components/settings/SettingsPanel.vue'
 import BackgroundForest from '../components/forest/BackgroundForest.vue'
-import DevTestButton from '../components/settings/DevTestButton.vue'
+import DevToolsPanel from '../components/settings/DevToolsPanel.vue'
 import IconSvg from '../components/icons/IconSvg.vue'
+import { useSettingsStore } from '../stores/settings'
+
+const settings = useSettingsStore()
+
+// ── Default background on first launch ──
+// Must run during setup (before template mount) so BackgroundForest
+// sees the saved filter when its onMounted fires.
+const validFilters: TimeFilter[] = ['today', 'week', 'month', 'total']
+const savedFilter = localStorage.getItem('bgForest') as TimeFilter | null
+if (!savedFilter || !validFilters.includes(savedFilter)) {
+  localStorage.setItem('bgForest', 'today')
+}
 
 const forestStore = useForestStore()
-const audioStore = useAudioStore()
 const timerStore = useTimerStore()
-const engine = useAudioEngine()
 
 const modeLabel = computed(() => {
   const labels: Record<string, string> = { countdown: '倒计时', countup: '正计时', free: '自由专注' }
   return labels[timerStore.mode] || '专注'
 })
+
+const activeStatsFilter = ref<TimeFilter>('today')
+const statsFilterLabel = computed(() => TIME_FILTER_LABELS[activeStatsFilter.value])
 
 const lightningClass = computed(() => ({
   flash: gwLightning.value,
@@ -141,75 +154,48 @@ function syncWeatherFromStore() {
   applyWeather(forestStore.weather)
 }
 
-// ── Ambiance mapping (same logic as ForestViewPage) ──
-
-function getAmbianceKeys(terrain: TerrainType, weather: WeatherType): string[] {
-  const keys: string[] = []
-  if (terrain === 'creek') keys.push('creek')
-  if (terrain === 'mountain') keys.push('wind')
-  if (weather === 'rainy') keys.push('rain')
-  if (weather === 'thunderstorm') keys.push('thunder')
-  if (keys.length === 0) keys.push('forest')
-  return keys
-}
-
-async function updateAmbiance() {
-  if (!audioStore.ambianceEnabled) {
-    engine.stopAllAmbiance()
-    return
-  }
-  const keys = getAmbianceKeys(forestStore.terrain, forestStore.weather)
-  await engine.playAmbiance(keys)
-}
-
 // ── Watchers ──
 
-// Watch forest store weather for real-time changes (shared with BackgroundForest)
+// Watch forest store weather for real-time visual weather effects (shared with BackgroundForest)
 watch(() => forestStore.weather, () => {
   const hasBg = !!localStorage.getItem('bgForest')
   if (hasBg) applyWeather(forestStore.weather)
-  updateAmbiance()
 })
 
-watch(() => audioStore.currentBgmTrack, async (track) => {
-  if (track) {
-    await engine.playBgm(track)
-  } else {
-    engine.stopBgm()
+// ── Listen for background updates from ForestViewPage ──
+function onBgForestUpdate() {
+  const filter = localStorage.getItem('bgForest') as TimeFilter | null
+  if (filter && validFilters.includes(filter)) {
+    activeStatsFilter.value = filter
+    api.getTrees(filter).then(({ data }) => {
+      forestStore.stats = data.stats
+    }).catch(() => {})
   }
-})
-
-watch(() => audioStore.masterVolume, (vol) => {
-  engine.setMasterVolume(audioStore.isMuted ? 0 : vol)
-})
-
-watch(() => audioStore.isMuted, (muted) => {
-  engine.setMasterVolume(muted ? 0 : audioStore.masterVolume)
-})
-
-watch(() => audioStore.ambianceEnabled, () => {
-  updateAmbiance()
-})
-
-// Watch forest store weather for real-time changes (shared with BackgroundForest)
-watch(() => forestStore.weather, () => {
-  const hasBg = !!localStorage.getItem('bgForest')
-  if (hasBg) applyWeather(forestStore.weather)
-})
+}
+window.addEventListener('bg-forest-update', onBgForestUpdate)
 
 onMounted(async () => {
   window.addEventListener('bg-weather-update', onBgWeatherUpdate)
+
+  // Use the filter that was saved during setup (guaranteed non-null)
+  const filter = (localStorage.getItem('bgForest') || 'today') as TimeFilter
+  if (validFilters.includes(filter)) activeStatsFilter.value = filter
+
+  // BackgroundForest.loadBgTrees() sets forestStore.stats once it resolves.
+  // As a safety net (e.g. slow backend), retry fetching stats ourselves if
+  // they are still zero after a short wait.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { data } = await api.getTrees(filter)
+      if (data.stats.count > 0 || attempt >= 2) {
+        forestStore.stats = data.stats
+        break
+      }
+    } catch { /* keep trying */ }
+    if (attempt < 2) await new Promise(r => setTimeout(r, 1000))
+  }
+
   syncWeatherFromStore()
-  // Init audio engine
-  await engine.init()
-  engine.setMasterVolume(audioStore.masterVolume)
-  if (audioStore.ambianceEnabled) {
-    await updateAmbiance()
-  }
-  // Resume BGM if one was already selected
-  if (audioStore.currentBgmTrack) {
-    await engine.playBgm(audioStore.currentBgmTrack)
-  }
 })
 
 function onBgWeatherUpdate(e: Event) {
@@ -220,6 +206,7 @@ function onBgWeatherUpdate(e: Event) {
 
 onUnmounted(() => {
   window.removeEventListener('bg-weather-update', onBgWeatherUpdate)
+  window.removeEventListener('bg-forest-update', onBgForestUpdate)
   stopGlobalLightning()
 })
 </script>

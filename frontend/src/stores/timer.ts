@@ -12,6 +12,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { TimerMode, TimerStatus } from '../types/timer'
 import { completeSession } from '../services/api'
+import { useForestStore } from './forest'
 
 export const useTimerStore = defineStore('timer', () => {
   // ── State ──
@@ -134,6 +135,8 @@ export const useTimerStore = defineStore('timer', () => {
         ended_at: endedAt,
       })
       currentSessionId.value = data.session.id
+      // Refresh forest so the new tree appears
+      useForestStore().fetchTrees()
     } catch (err) {
       console.error('Failed to save session:', err)
     }

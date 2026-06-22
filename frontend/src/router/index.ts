@@ -1,5 +1,23 @@
+/** Vue Router — hash-based for PWA + Tauri compatibility.
+ *
+ *  Platform-aware routing:
+ *    PC    → views/HomeView.vue  / views/ForestViewPage.vue
+ *    Mobile → views/mobile/HomeView.vue  / views/mobile/ForestViewPage.vue
+ *
+ *  The platform is determined once at module load and never changes
+ *  during the app lifetime (a user doesn't switch device mid-session).
+ */
+
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import { detectPlatform } from '../composables/usePlatform'
+
+const isMobile = detectPlatform() === 'mobile'
+
+// ── PC views ──
+import HomeViewPC from '../views/HomeView.vue'
+
+// ── Mobile views ──
+import HomeViewMobile from '../views/mobile/HomeView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -7,12 +25,20 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView,
+      component: isMobile ? HomeViewMobile : HomeViewPC,
     },
     {
       path: '/forest',
       name: 'forest',
-      component: () => import('../views/ForestViewPage.vue'),
+      // Lazy-loaded for both platforms
+      component: isMobile
+        ? () => import('../views/mobile/ForestViewPage.vue')
+        : () => import('../views/ForestViewPage.vue'),
+    },
+    {
+      path: '/floating',
+      name: 'floating',
+      component: () => import('../views/FloatingBallView.vue'),
     },
   ],
 })

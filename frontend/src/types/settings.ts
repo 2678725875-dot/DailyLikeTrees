@@ -9,4 +9,7 @@ export interface AppSettings {
   ambiance_enabled: boolean
   default_timer_mode: string
   default_species_id: string
+  dev_mode: boolean
+  weather_enabled: boolean
+  floating_ball_enabled: boolean
 }

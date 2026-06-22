@@ -72,21 +72,26 @@ function computeGridDimensions(
   const MIN_ROWS = isBg ? 8 : 5
   const MAX_ASPECT = isBg ? 2.5 : 2.0
 
-  // Base target: enough tiles to hold all trees at the desired density
-  let targetUsable = Math.max(MIN_COLS * MIN_ROWS, Math.ceil(treeCount / DENSITY))
-  let cols = Math.max(MIN_COLS, Math.ceil(Math.sqrt(targetUsable)))
-  let rows = Math.max(MIN_ROWS, Math.ceil(targetUsable / cols))
-
-  // Creek compensation: water tiles reduce available space
-  if (terrain === 'creek') {
-    let waterFrac = Math.min(0.55, 2.3 / rows)
-    let totalNeeded = Math.ceil(targetUsable / (1 - waterFrac))
-    rows = Math.max(MIN_ROWS, Math.ceil(totalNeeded / cols))
-    // Refine with updated rows
-    waterFrac = Math.min(0.55, 2.3 / rows)
-    totalNeeded = Math.ceil(targetUsable / (1 - waterFrac))
-    rows = Math.max(MIN_ROWS, Math.ceil(totalNeeded / cols))
+  // Fraction of tiles that can actually hold a tree for each terrain.
+  //   plain:    100% — every tile is plantable
+  //   creek:    ~78% — water tiles occupy roughly 22% of the grid
+  //   mountain: ~72% — rock + rock_edge cover ~28% of the grid
+  // These are conservative averages; actual ratios vary per seed.
+  const PLANTABLE_RATIO: Record<TerrainType, number> = {
+    plain: 1.0,
+    creek: 0.78,
+    mountain: 0.72,
   }
+  const plantableRatio = PLANTABLE_RATIO[terrain]
+
+  // Target TOTAL tiles (not just usable) so that after subtracting
+  // unplantable terrain features the golden-ratio density holds.
+  let targetTotal = Math.max(
+    MIN_COLS * MIN_ROWS,
+    Math.ceil(treeCount / (DENSITY * plantableRatio))
+  )
+  let cols = Math.max(MIN_COLS, Math.ceil(Math.sqrt(targetTotal)))
+  let rows = Math.max(MIN_ROWS, Math.ceil(targetTotal / cols))
 
   // Aspect ratio guards: prevent overly wide or tall grids
   if (rows * MAX_ASPECT < cols) rows = Math.max(MIN_ROWS, Math.ceil(cols / MAX_ASPECT))
@@ -139,6 +144,215 @@ const FACE_COLORS: Record<TileKind, { top: number; left: number; right: number }
   rock_edge: { top: 0xb8c898, left: 0xa0b880, right: 0x8ca070 },
 }
 
+// ═══════════════════════════════════════════
+//  CREEK GENERATION v3 — rotated-coordinate meandering creeks
+// ═══════════════════════════════════════════
+//
+//  Core problem with v2: every creek was a 1D function of gx,
+//  which forced ALL creeks to flow horizontally left→right.
+//  Combined with over-wide parameters this made every terrain
+//  look the same.
+//
+//  v3 fixes this with three changes:
+//    1. Each creek is rotated by a random angle (0–π) so creeks
+//       flow horizontal, vertical, diagonal — any direction.
+//    2. Width is scaled by the diagonal grid length and kept
+//       deliberately narrow: 1–2 tile core at min grid, growing
+//       slowly to 2–3 tiles on very large grids.
+//    3. Edge-tapering is relaxed so creeks can meander freely
+//       instead of being pinned to the centre.
+//
+//  How the rotation works:
+//    rx = gx·cosθ – gy·sinθ   (along-creek axis)
+//    ry = gx·sinθ + gy·cosθ   (cross-creek axis)
+//    The creek centreline is ry as a function of rx (normalised
+//    to [0,1]).  Tiles are water when their ry is close to the
+//    centreline.  This is the same maths as v2 but with a change
+//    of basis — the "creek flows along rx" instead of "along gx".
+
+/** Number of creeks based on total grid tiles.
+ *    <  30 tiles  →  1 creek
+ *    30–80 tiles  →  2 creeks
+ *    >  80 tiles  →  3 creeks  */
+function maxCreeksForGridSize(totalTiles: number): number {
+  if (totalTiles < 30) return 1
+  if (totalTiles < 80) return 2
+  return 3
+}
+
+/**
+ * Pre-computed geometry for one creek — derived once from the seed
+ * and grid dimensions, then re-used for every tile check.
+ */
+interface CreekGeom {
+  /** Rotation angle (radians). 0 = horizontal, π/2 = vertical. */
+  angle: number
+  cosA: number
+  sinA: number
+  /** min/max of rx over the grid rectangle (along-creek axis). */
+  minRx: number
+  maxRx: number
+  /** min/max of ry over the grid (cross-creek axis). */
+  minRy: number
+  maxRy: number
+  /** Total length along the creek direction (maxRx – minRx). */
+  rxLen: number
+  /** Total length across the creek direction (maxRy – minRy). */
+  ryLen: number
+}
+
+/** Build CreekGeom for one creek.  Computed once per render, cached
+ *  by (seed, creekIdx, rows, cols). */
+function buildCreekGeom(
+  seed: number,
+  creekIdx: number,
+  rows: number,
+  cols: number,
+): CreekGeom {
+  // Random angle: 0 = horizontal, PI/2 = vertical.
+  // We bias slightly away from exactly-horizontal (±5°) so vertical
+  // grid lines don't align with creek edges and create jaggies.
+  const rawAngle = hash33(seed * 0.117 + creekIdx * 0.373, 0.541) * Math.PI
+  const angle = rawAngle
+
+  const cosA = Math.cos(angle)
+  const sinA = Math.sin(angle)
+
+  // Analytical rx min/max over the grid rectangle (no loop needed).
+  const cMax = cosA > 0 ? cols - 1 : 0
+  const cMin = cosA > 0 ? 0 : cols - 1
+  const sForRx = sinA > 0 ? 0 : rows - 1   // which gy extreme minimises rx
+  const maxRx = cMax * cosA - sForRx * sinA
+  const sForRxMin = sinA > 0 ? rows - 1 : 0
+  const minRx = cMin * cosA - sForRxMin * sinA
+
+  // Analytical ry min/max.
+  const sMax = cosA > 0 ? rows - 1 : 0
+  const sMin = cosA > 0 ? 0 : rows - 1
+  const cForRy = sinA > 0 ? cols - 1 : 0
+  const maxRy = cForRy * sinA + sMax * cosA
+  const cForRyMin = sinA > 0 ? 0 : cols - 1
+  const minRy = cForRyMin * sinA + sMin * cosA
+
+  return {
+    angle, cosA, sinA,
+    minRx, maxRx, minRy, maxRy,
+    rxLen: Math.max(1, maxRx - minRx),
+    ryLen: Math.max(1, maxRy - minRy),
+  }
+}
+
+// Module-level cache for creek geometry (one per render, cleared
+// when the terrain seed or grid dimensions change).
+let creekGeomCache: CreekGeom[] | null = null
+let creekGeomCacheKey = ''
+
+function getCreekGeoms(seed: number, rows: number, cols: number): CreekGeom[] {
+  const key = `${seed}|${rows}|${cols}`
+  if (creekGeomCache && creekGeomCacheKey === key) return creekGeomCache
+
+  const maxCreeks = maxCreeksForGridSize(rows * cols)
+  creekGeomCache = []
+  for (let ci = 0; ci < maxCreeks; ci++) {
+    creekGeomCache.push(buildCreekGeom(seed, ci, rows, cols))
+  }
+  creekGeomCacheKey = key
+  return creekGeomCache
+}
+
+/**
+ * Creek centreline in cross-creek (ry) coordinates.
+ *
+ * `t` is the normalised along-creek position [0, 1] (rx mapped to 0…1).
+ * Returns the ry value of the creek centreline at that point.
+ */
+function creekCenterRY(
+  t: number,
+  creekIdx: number,
+  seed: number,
+  geom: CreekGeom,
+  maxCreeks: number,
+): number {
+  const cs = seed + creekIdx * 137.508
+
+  // Spread creeks evenly across the cross-creek range
+  const spacing = geom.ryLen / (maxCreeks + 1)
+  const baseRY = geom.minRy + spacing * (creekIdx + 1)
+
+  // Three frequency bands for multi-scale meandering.
+  // Amplitudes are proportional to ryLen (cross-creek space) so
+  // meanders stay proportional to the available space.
+  const spreadFactor = 1 / Math.sqrt(maxCreeks)
+  const amp1 = geom.ryLen * 0.12 * spreadFactor
+  const amp2 = geom.ryLen * 0.06 * spreadFactor
+  const amp3 = geom.ryLen * 0.025 * spreadFactor
+
+  // FBM along the normalised creek axis (not gx!)
+  const n1 = fbm(t * 1.8 + cs, cs * 0.27, 2) * 2 - 1  // → [-1, 1]
+  const n2 = fbm(t * 3.5 + cs + 41, cs * 0.53, 3) * 2 - 1
+  const n3 = fbm(t * 7.0 + cs + 97, cs * 0.71, 2) * 2 - 1
+
+  // Gentle edge fade — less clamping than v2 for organic freedom
+  const edgeFade = 1 - Math.abs(t - 0.5) * 0.55
+  const edgeClamp = Math.max(0.12, edgeFade)
+
+  let ry = baseRY + (n1 * amp1 + n2 * amp2 + n3 * amp3) * edgeClamp
+  // Soft-clamp within the cross-creek range
+  ry = Math.max(geom.minRy + 0.6, Math.min(geom.maxRy - 0.6, ry))
+
+  return ry
+}
+
+/**
+ * Creek half-width (in tile units) at normalised position `t`.
+ *
+ * Width is deliberately narrow: 1–2 tile core at minimum grid,
+ * growing slowly with the diagonal grid length.
+ */
+function creekWidthAt(
+  t: number,
+  creekIdx: number,
+  seed: number,
+  geom: CreekGeom,
+  maxCreeks: number,
+): number {
+  const cs = seed + creekIdx * 251.3
+
+  // Slightly wider in the middle, narrower near edges
+  const posFactor = 1 - Math.abs(t - 0.5) * 0.8
+
+  // Noise-driven width variation (0…1)
+  const wn = fbm(t * 2.5 + cs, cs * 0.38, 2) * 0.5 + 0.5
+
+  // Width grows slowly with the diagonal of the grid.
+  // At min grid (7×5 → diag ≈ 8.6): baseW ≈ 0.67 → core ≈ 1.3 tiles wide
+  // At large grid (27×27 → diag ≈ 38): baseW ≈ 1.26 → core ≈ 2.5 tiles wide
+  const diagLen = Math.sqrt(geom.rxLen * geom.rxLen + geom.ryLen * geom.ryLen)
+  const baseW = 0.45 + diagLen * 0.020
+  const extraW = 0.20 + diagLen * 0.015
+
+  // Narrower when more creeks share the grid
+  const widthFactor = 1 / Math.sqrt(maxCreeks)
+
+  return (baseW + wn * extraW * posFactor) * widthFactor
+}
+
+/**
+ * Island check — returns `true` when a tile inside a wide creek
+ * section should be a dry "island" plain tile.
+ * Only fires when creek half-width > 2.0 (wide sections on large grids).
+ */
+function isIslandTile(
+  rx: number,
+  ry: number,
+  creekIdx: number,
+  seed: number,
+): boolean {
+  const cs = seed + creekIdx * 79.3
+  const n = fbm(rx * 0.09 + cs, ry * 0.09 + cs + 53, 2)
+  return n < 0.18
+}
+
 let heightNoiseCache = new Map<string, number>()
 
 function getHeightNoise(gx: number, gy: number): number {
@@ -166,17 +380,42 @@ function getTileKind(gx: number, gy: number, terrain: TerrainType, rows: number,
   if (terrain === 'plain') return 'plain'
 
   if (terrain === 'creek') {
-    const scale = getGridScale(rows, cols)
     const s = terrainSeed.value
-    const amp = 2.2 * scale
-    // Preserve sin/cos ratio (1.6:0.6 ≈ 0.727:0.273)
-    const creekY = Math.sin(gx * 0.7 + s * 0.3) * (amp * 0.727)
-                 + Math.cos(gx * 0.45 + s * 0.17) * (amp * 0.273)
-                 + rows * 0.45
-    const dist = Math.abs(gy - creekY)
-    if (dist < 0.9 * scale) return 'water'
-    if (dist < 1.3 * scale && ((gx * 37 + gy * 59 + s * 100) % 100) < 50) return 'water'
-    if (dist < 1.8 * scale && ((gx * 73 + gy * 47 + s * 50) % 100) < 15) return 'water'
+
+    // Pre-compute creek geometry once per render (cached by seed + grid size)
+    const geoms = getCreekGeoms(s, rows, cols)
+    const maxCreeks = geoms.length
+
+    for (let ci = 0; ci < maxCreeks; ci++) {
+      const geom = geoms[ci]
+      const cs = s + ci * 137.508
+
+      // Rotate tile coordinates into creek-space
+      const rx = gx * geom.cosA - gy * geom.sinA
+      const ry = gx * geom.sinA + gy * geom.cosA
+
+      // Normalised along-creek position t ∈ [0, 1]
+      const t = (rx - geom.minRx) / geom.rxLen
+
+      // Creek centreline + width at this t
+      const cy = creekCenterRY(t, ci, s, geom, maxCreeks)
+      const cw = creekWidthAt(t, ci, s, geom, maxCreeks)
+      const dist = Math.abs(ry - cy)
+
+      // ── Island check: wide sections can sprout small dry patches ──
+      if (cw > 2.0 && dist < cw * 0.58 && isIslandTile(rx, ry, ci, s))
+        continue
+
+      // ── Core channel (guaranteed water) ──
+      if (dist < 0.70 * cw) return 'water'
+
+      // ── Irregular banks via higher-frequency 2D noise ──
+      // Bank noise uses original (gx,gy) coordinates for detail.
+      if (dist < 0.95 * cw && fbm(gx * 2.1 + gy * 1.7 + cs, 0, 2) > 0.35) return 'water'
+      if (dist < 1.25 * cw && fbm(gx * 3.0 + gy * 2.5 + cs + 47, 0, 2) > 0.62) return 'water'
+      if (dist < 1.45 * cw && fbm(gx * 4.2 + gy * 3.1 + cs + 103, 0, 2) > 0.80) return 'water'
+    }
+
     return 'plain'
   }
 
@@ -228,7 +467,7 @@ function assignTreePositions(trees: PlantedTree[], tileKinds: TileKind[][], rows
     const row = tileKinds[gy]
     if (!row) continue
     for (let gx = 0; gx < cols; gx++)
-      if ((row[gx] ?? 'plain') !== 'water')
+      if ((row[gx] ?? 'plain') !== 'water' && (row[gx] ?? 'plain') !== 'rock')
         available.push({ gx, gy, kind: row[gx] ?? 'plain' })
   }
   shuffle(available)
@@ -242,7 +481,7 @@ function assignTreePositions(trees: PlantedTree[], tileKinds: TileKind[][], rows
         const gx = (i + attempt) % cols
         const gy = Math.floor((i + attempt) / cols) % rows
         const kind = tileKinds[gy]?.[gx] ?? 'plain'
-        if (kind !== 'water') {
+        if (kind !== 'water' && kind !== 'rock') {
           placements.set(trees[i].id, { gx, gy, kind })
           placed = true
           break
