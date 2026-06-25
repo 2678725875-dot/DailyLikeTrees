@@ -20,6 +20,13 @@ backend/dist/
 backend/*.spec
 frontend/src-tauri/binaries/
 frontend/src-tauri/target/
+frontend/android/app/build/
+frontend/android/build/
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/app/src/main/assets/public/
+frontend/android/*.keystore
+frontend/android/keystore.properties
 
 # ── Database & data (may contain user data) ──
 *.db
@@ -30,6 +37,7 @@ frontend/src-tauri/target/
 .env
 .env.*
 !.env.example
+!.env.pwa
 
 # ── IDE & editors ──
 .vscode/

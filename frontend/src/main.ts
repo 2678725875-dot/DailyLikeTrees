@@ -16,6 +16,13 @@ if ('__TAURI__' in window) {
   document.documentElement.classList.add('tauri-app')
 }
 
+// Register Service Worker for PWA offline support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {
+    // SW registration failure is non-fatal (e.g. dev mode, HTTP)
+  })
+}
+
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)

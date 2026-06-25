@@ -6,9 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "build:pwa": "vue-tsc -b && vite build --mode pwa",
+    "android:sync": "npx cap sync android",
+    "android:build": "npm run build:pwa && npx cap sync android && cd android && ./gradlew assembleDebug",
+    "preview": "vite preview",
+    "preview:pwa": "vite preview --mode pwa"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
     "@lucide/vue": "^1.21.0",
     "@tauri-apps/api": "^2.11.1",
     "@vueuse/core": "^10.11.1",
@@ -23,6 +30,7 @@
     "@types/node": "^24.12.3",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/tsconfig": "^0.9.1",
+    "sharp": "^0.35.2",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
     "vue-tsc": "^3.2.8"

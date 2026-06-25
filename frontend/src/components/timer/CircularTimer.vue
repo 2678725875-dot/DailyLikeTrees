@@ -85,7 +85,14 @@
 
       <template v-if="store.isPaused">
         <button class="btn btn-resume" @click="store.resume()">继续</button>
-        <button class="btn btn-abandon" @click="store.abandon()">放弃</button>
+        <button
+          v-if="store.mode === 'free' && store.elapsedSeconds >= 30"
+          class="btn btn-complete"
+          @click="store.complete()"
+        >
+          结束
+        </button>
+        <button v-else class="btn btn-abandon" @click="store.abandon()">放弃</button>
       </template>
     </div>
 
@@ -318,6 +325,7 @@ watch(() => store.isCompleted, (completed) => {
 .btn-start { background: var(--color-primary); color: white; }
 .btn-pause { background: var(--color-warning, #f0ad4e); color: white; }
 .btn-resume { background: var(--color-primary); color: white; }
+.btn-complete { background: var(--color-primary); color: white; }
 .btn-abandon { background: var(--color-muted, #999); color: white; }
 
 /* Celebration toast */

@@ -1,0 +1,20 @@
+{
+  "name": "DailyLikeTrees · 如树日常",
+  "short_name": "如树日常",
+  "description": "日复一日，如树般生长。每一次专注，都在你的森林里种下一棵树。",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f8f5",
+  "theme_color": "#6B8E23",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "lifestyle"],
+  "lang": "zh-CN"
+}

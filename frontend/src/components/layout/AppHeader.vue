@@ -70,7 +70,9 @@ const settings = useSettingsStore()
 .header-nav {
   display: flex;
   gap: 4px;
-  position: relative;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .nav-link {
