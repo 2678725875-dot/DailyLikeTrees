@@ -26,7 +26,7 @@
 
 设定一个专注目标 → 完成它 → 在你的等距「专注森林」中种下一棵树。日积月累，终成一片林。
 
-> 🖥️ 当前开发阶段：**多平台 MVP — Web + Electron 桌面 + Android**
+> 🖥️ 当前开发阶段：**多平台 MVP — Web + Electron 桌面 + Android（正在开发）**
 
 ---
 
@@ -187,7 +187,7 @@ cp dist/backend.exe ../frontend/src-tauri/binaries/backend.exe
 # Electron 构建时自动读取
 ```
 
-### 5. 移动端（Android）
+### 5. 移动端（Android） - 不稳定且适配未完成
 
 > 📱 基于 Capacitor，PWA 转原生 APK。
 
