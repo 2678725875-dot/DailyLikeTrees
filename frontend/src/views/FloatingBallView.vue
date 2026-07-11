@@ -45,7 +45,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 
-// ── Tauri detection ──
+// ── Runtime detection (Electron / Tauri) ──
+const isElectron = typeof window !== 'undefined' && 'electronAPI' in window
+const electronAPI = isElectron ? (window as any).electronAPI : null
+
 const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 const tauri = isTauri ? (window as any).__TAURI_INTERNALS__ : null
 const tauriInvoke = tauri
@@ -109,6 +112,17 @@ function stopTicking() {
 let unlisten: (() => void) | null = null
 
 async function setupEventListener() {
+  // ── Electron path ──
+  if (isElectron && electronAPI?.onEvent) {
+    unlisten = electronAPI.onEvent((name: string, payload: any) => {
+      if (name === 'fb:state') handleStateUpdate(payload)
+    })
+    // Request initial state from main window
+    electronAPI.sendEvent('fb:request-state', {})
+    return
+  }
+
+  // ── Tauri path ──
   if (!isTauri) return
   try {
     const { listen } = await import('@tauri-apps/api/event')
@@ -142,6 +156,7 @@ function handleStateUpdate(payload: any) {
 function onMouseDown(e: MouseEvent) {
   const target = e.target as HTMLElement
   if (target.closest('button') || target.closest('.fb-todo-item')) return
+  if (isElectron) return // Electron handles drag via CSS -webkit-app-region
   if (!tauriInvoke) return
   tauriInvoke('plugin:window|start_dragging', { label: winLabel })
 }
@@ -158,8 +173,11 @@ function collapse() {
 }
 
 function notifyResize(width: number, height: number) {
+  if (isElectron && electronAPI) {
+    electronAPI.resizeFloating(width, height)
+    return
+  }
   if (!tauriInvoke) return
-  // Resize own window
   tauriInvoke('plugin:window|set_size', {
     label: winLabel,
     value: { width, height },
@@ -169,6 +187,10 @@ function notifyResize(width: number, height: number) {
 // ── Set active todo ──
 function setActiveTodo(id: number | null) {
   activeTodoId.value = id
+  if (isElectron && electronAPI) {
+    electronAPI.sendEvent('fb:set-active', { todoId: id })
+    return
+  }
   if (tauriInvoke) {
     tauriInvoke('plugin:event|emit', { event: 'fb:set-active', payload: { todoId: id } })
   }
@@ -200,6 +222,8 @@ onUnmounted(() => {
   font-family: 'Inter', 'SF Pro Display', 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif;
   background: transparent;
   overflow: hidden;
+  /* Electron: make the floating window draggable */
+  -webkit-app-region: drag;
 }
 
 .fb-mini {
@@ -219,6 +243,7 @@ onUnmounted(() => {
   backdrop-filter: blur(12px);
   margin: 4px;
   transition: transform 0.15s ease, background 0.15s ease;
+  -webkit-app-region: no-drag;
 }
 
 .fb-mini:hover {

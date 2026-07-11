@@ -1,0 +1,46 @@
+{
+  "name": "dailyliketrees",
+  "version": "0.1.0",
+  "description": "DailyLikeTrees · 如树日常 — Electron desktop app",
+  "main": "main.js",
+  "author": "Ultraism",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "start": "set ELECTRON_RUN_AS_NODE= && electron .",
+    "build": "npm run build:frontend && npm run copy:dist && electron-builder --win",
+    "build:frontend": "cd ..\\frontend && npm run build",
+    "copy:dist": "node -e \"const fs=require('fs');const p=require('path');const s=p.join(__dirname,'..','frontend','dist');const d=p.join(__dirname,'dist');fs.rmSync(d,{recursive:true,force:true});fs.cpSync(s,d,{recursive:true});console.log('dist copied')\""
+  },
+  "build": {
+    "appId": "com.dailyliketrees.app",
+    "productName": "DailyLikeTrees",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "icon.ico"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/src-tauri/binaries/backend.exe",
+        "to": "backend.exe"
+      }
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  }
+}

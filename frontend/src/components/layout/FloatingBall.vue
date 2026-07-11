@@ -58,7 +58,10 @@ const settings = useSettingsStore()
 const timer = useTimerStore()
 const todos = useTodosStore()
 
-// ── Tauri detection ──
+// ── Runtime detection (Electron / Tauri / Browser) ──
+const isElectron = typeof window !== 'undefined' && 'electronAPI' in window
+const electronAPI = isElectron ? (window as any).electronAPI : null
+
 const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 const tauri = isTauri ? (window as any).__TAURI_INTERNALS__ : null
 const tauriInvoke = tauri
@@ -80,8 +83,25 @@ let unlistenSetActive: (() => void) | null = null
 // ── Tauri: open / close the floating window ──
 
 async function openFloatingWindow() {
-  if (windowOpen || !isTauri) return
+  if (windowOpen) return
   windowOpen = true
+
+  // ── Electron path ──
+  if (isElectron && electronAPI) {
+    const sw = window.screen.availWidth
+    const sh = window.screen.availHeight
+    electronAPI.openFloating({ width: 130, height: 75, x: sw - 160, y: sh - 140 })
+    if (electronAPI.onEvent) {
+      const unsub = electronAPI.onEvent((name: string, payload: any) => {
+        if (name === 'fb:set-active') { todos.setActiveTodo(payload?.todoId ?? null) }
+        if (name === 'fb:request-state') { emitStateToFloating() }
+      })
+      unlistenSetActive = unsub
+    }
+    return
+  }
+
+  if (!isTauri) { windowOpen = false; return }
 
   try {
     const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
@@ -131,10 +151,17 @@ async function openFloatingWindow() {
 }
 
 async function closeFloatingWindow() {
-  if (!windowOpen || !isTauri) return
+  if (!windowOpen) return
   windowOpen = false
 
   if (unlistenSetActive) { unlistenSetActive(); unlistenSetActive = null }
+
+  if (isElectron && electronAPI) {
+    electronAPI.closeFloating()
+    return
+  }
+
+  if (!isTauri) return
 
   try {
     if (tauriInvoke) {
@@ -144,18 +171,24 @@ async function closeFloatingWindow() {
 }
 
 async function emitStateToFloating() {
-  if (!windowOpen || !tauriInvoke) return
-  await tauriInvoke('plugin:event|emit', {
-    event: 'fb:state',
-    payload: {
-      timerStatus: timer.status,
-      elapsedSeconds: timer.elapsedSeconds,
-      targetSeconds: timer.targetSeconds,
-      mode: timer.mode,
-      todos: todos.items,
-      activeTodoId: todos.activeTodoId,
-    },
-  })
+  if (!windowOpen) return
+
+  const state = {
+    timerStatus: timer.status,
+    elapsedSeconds: timer.elapsedSeconds,
+    targetSeconds: timer.targetSeconds,
+    mode: timer.mode,
+    todos: todos.items,
+    activeTodoId: todos.activeTodoId,
+  }
+
+  if (isElectron && electronAPI) {
+    electronAPI.sendEvent('fb:state', state)
+    return
+  }
+
+  if (!tauriInvoke) return
+  await tauriInvoke('plugin:event|emit', { event: 'fb:state', payload: state })
 }
 
 // ── Focus tracking ──
@@ -166,7 +199,7 @@ let focusCheckTimer: ReturnType<typeof setInterval> | null = null
 async function checkFocus() {
   const focused = document.hasFocus()
 
-  if (isTauri) {
+  if (isTauri || isElectron) {
     if (!focused && lastFocused && settings.floatingBallEnabled) {
       await openFloatingWindow()
     } else if (focused && !lastFocused) {

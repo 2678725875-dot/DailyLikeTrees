@@ -16,6 +16,11 @@ if ('__TAURI__' in window) {
   document.documentElement.classList.add('tauri-app')
 }
 
+// Detect Electron environment for frameless window styling
+if ('electronAPI' in window) {
+  document.documentElement.classList.add('electron-app')
+}
+
 // Register Service Worker for PWA offline support
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {

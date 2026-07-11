@@ -20,6 +20,7 @@ backend/dist/
 backend/*.spec
 frontend/src-tauri/binaries/
 frontend/src-tauri/target/
+frontend/src-tauri/WebView2Fixed/
 frontend/android/app/build/
 frontend/android/build/
 frontend/android/.gradle/
@@ -55,6 +56,11 @@ frontend/android/keystore.properties
 Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+
+# ── Electron ──
+electron-app/node_modules/
+electron-app/release/
+electron-app/dist/
 
 # ── Logs ──
 logs/

@@ -267,6 +267,101 @@ pub fn run() {
                 }
             }
 
+            // ── Embedded HTTP server for frontend ──
+            // WebView2 149+ can't render tauri:// custom protocol (white
+            // screen).  We serve the same files via http://127.0.0.1:PORT.
+            let frontend_dir = {
+                let exe_dir = std::env::current_exe()
+                    .ok()
+                    .and_then(|e| e.parent().map(|p| p.to_path_buf()));
+                exe_dir
+                    .as_ref()
+                    .map(|d| d.join("frontend"))
+                    .or_else(|| app.path().resource_dir().ok().map(|d| d.join("frontend")))
+                    .unwrap_or_else(|| std::path::PathBuf::from("frontend"))
+            };
+            let serve_dir =
+                std::fs::canonicalize(&frontend_dir).unwrap_or_else(|_| frontend_dir.clone());
+            dlog!("HTTP root: {:?}", serve_dir);
+
+            let port = {
+                use std::net::TcpListener;
+                TcpListener::bind("127.0.0.1:0")
+                    .expect("Failed to bind")
+                    .local_addr()
+                    .unwrap()
+                    .port()
+            };
+
+            let serve_dir_clone = serve_dir.clone();
+            std::thread::spawn(move || {
+                let server = match tiny_http::Server::http(&format!("127.0.0.1:{}", port)) {
+                    Ok(s) => s,
+                    Err(_) => return,
+                };
+                loop {
+                    let request = match server.recv() {
+                        Ok(r) => r,
+                        Err(_) => break,
+                    };
+                    let url_path = request
+                        .url()
+                        .trim_start_matches('/')
+                        .replace("%20", " ");
+                    let url_path = if url_path.is_empty() {
+                        "index.html"
+                    } else {
+                        &url_path
+                    };
+                    let mut file_path = serve_dir_clone.join(url_path);
+                    if !file_path.is_file() {
+                        file_path = serve_dir_clone.join("index.html");
+                    }
+                    // Prevent directory traversal
+                    if std::fs::canonicalize(&file_path)
+                        .map(|p| !p.starts_with(&serve_dir_clone))
+                        .unwrap_or(true)
+                    {
+                        let _ = request.respond(
+                            tiny_http::Response::from_string("404").with_status_code(404),
+                        );
+                        continue;
+                    }
+                    match std::fs::File::open(&file_path) {
+                        Ok(file) => {
+                            let response = tiny_http::Response::from_file(file);
+                            // Force correct MIME for JS (ES modules require it)
+                            let mime = match file_path.extension().and_then(|e| e.to_str()) {
+                                Some("js") | Some("mjs") => {
+                                    "application/javascript; charset=UTF-8"
+                                }
+                                Some("css") => "text/css; charset=UTF-8",
+                                Some("html") | Some("htm") => "text/html; charset=UTF-8",
+                                _ => "",
+                            };
+                            if !mime.is_empty() {
+                                let hdr: tiny_http::Header =
+                                    format!("Content-Type: {}", mime).parse().unwrap();
+                                let _ = request.respond(response.with_header(hdr));
+                            } else {
+                                let _ = request.respond(response);
+                            }
+                        }
+                        Err(_) => {
+                            let _ = request.respond(
+                                tiny_http::Response::from_string("500").with_status_code(500),
+                            );
+                        }
+                    }
+                }
+            });
+
+            let http_url = format!("http://127.0.0.1:{}/index.html", port);
+            dlog!("Navigate to: {}", http_url);
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.navigate(url::Url::parse(&http_url).unwrap());
+            }
+
             Ok(())
         })
         .build(tauri::generate_context!())

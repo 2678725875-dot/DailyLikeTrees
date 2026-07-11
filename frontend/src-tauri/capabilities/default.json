@@ -2,6 +2,7 @@
   "identifier": "default",
   "description": "Default capability granting window control and drag permissions",
   "windows": ["main"],
+  "urls": ["http://127.0.0.1:*"],
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",

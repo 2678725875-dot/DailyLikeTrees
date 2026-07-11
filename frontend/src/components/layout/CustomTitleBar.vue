@@ -6,14 +6,12 @@
   >
     <!-- App icon + title -->
     <div class="titlebar-left">
-      <img src="/assets/logo.png" alt="" class="titlebar-icon" />
+      <img :src="logoPath" alt="" class="titlebar-icon" />
       <span class="titlebar-title">DailyLikeTrees</span>
-      <!-- DEBUG: show whether we detected Tauri runtime -->
-      <span v-if="!isTauri" class="no-tauri-badge">BROWSER</span>
     </div>
 
-    <!-- Window controls -->
-    <div class="titlebar-controls">
+    <!-- Window controls (desktop only) -->
+    <div v-if="isDesktop" class="titlebar-controls">
       <button class="ctrl-btn ctrl-min" @mousedown.stop @click.stop="handleMinimize" title="最小化">
         <svg width="12" height="12" viewBox="0 0 12 12"><rect y="5" width="12" height="1.2" rx="0.6" fill="currentColor"/></svg>
       </button>
@@ -29,11 +27,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 
-// ── Tauri v2 IPC — bypass @tauri-apps/api NPM package entirely ──
-// We talk to the Tauri backend via window.__TAURI_INTERNALS__.invoke().
-// This eliminates any bundling / code-split / module-resolution issues.
+const logoPath = computed(() => `${import.meta.env.BASE_URL}assets/logo.png`)
+
+// ── Runtime detection: Electron → Tauri v2 → Browser ──
+
+interface ElectronAPI {
+  minimize(): Promise<void>
+  toggleMaximize(): Promise<void>
+  close(): Promise<void>
+  isMaximized(): Promise<boolean>
+  onMaximizeChange(cb: (isMax: boolean) => void): () => void
+}
+
+function getElectronAPI(): ElectronAPI | null {
+  if (typeof window !== 'undefined' && 'electronAPI' in window) {
+    return (window as any).electronAPI as ElectronAPI
+  }
+  return null
+}
 
 interface TauriInternals {
   invoke(cmd: string, args?: Record<string, unknown>): Promise<unknown>
@@ -47,8 +60,9 @@ function getTauri(): TauriInternals | null {
   return null
 }
 
+const electron = getElectronAPI()
 const tauri = getTauri()
-const isTauri = tauri !== null
+const isDesktop = electron !== null || tauri !== null
 const winLabel = tauri?.metadata?.currentWindow?.label ?? 'main'
 
 async function invokeWindow(cmd: string) {
@@ -61,6 +75,10 @@ async function invokeWindow(cmd: string) {
 const isMax = ref(false)
 
 async function refreshMaxState() {
+  if (electron) {
+    try { isMax.value = await electron.isMaximized() } catch { /* ignore */ }
+    return
+  }
   if (!tauri) return
   try {
     isMax.value = (await tauri.invoke('plugin:window|is_maximized', { label: winLabel })) as boolean
@@ -68,27 +86,41 @@ async function refreshMaxState() {
 }
 
 async function handleMinimize() {
+  if (electron) { await electron.minimize(); return }
   await invokeWindow('minimize')
 }
 
 async function handleToggleMaximize() {
+  if (electron) {
+    await electron.toggleMaximize()
+    await refreshMaxState()
+    return
+  }
   await invokeWindow('toggle_maximize')
   await refreshMaxState()
 }
 
 async function handleClose() {
+  if (electron) { await electron.close(); return }
   await invokeWindow('close')
 }
 
 function onTitleBarMouseDown(e: MouseEvent) {
   const target = e.target as HTMLElement
   if (target.closest('.ctrl-btn')) return
+  if (electron) return // Electron handles drag via CSS -webkit-app-region
   if (!tauri) return
   // startDragging must be called synchronously from the mousedown handler
   tauri.invoke('plugin:window|start_dragging', { label: winLabel }).catch(() => {})
 }
 
-onMounted(() => refreshMaxState())
+onMounted(() => {
+  refreshMaxState()
+  // Electron: listen for maximize state changes (OS maximize button, double-click title bar)
+  if (electron) {
+    electron.onMaximizeChange((max: boolean) => { isMax.value = max })
+  }
+})
 </script>
 
 <style scoped>
@@ -103,6 +135,8 @@ onMounted(() => refreshMaxState())
   user-select: none;
   -webkit-user-select: none;
   flex-shrink: 0;
+  /* Electron: make entire title bar draggable */
+  -webkit-app-region: drag;
 }
 
 .titlebar-left {
@@ -127,13 +161,18 @@ onMounted(() => refreshMaxState())
   letter-spacing: .02em;
 }
 
-.no-tauri-badge {
+.runtime-badge {
   font-size: 10px;
   font-weight: var(--fw-semibold);
   color: #e81123;
   background: rgba(232, 17, 35, 0.12);
   padding: 1px 6px;
   border-radius: 4px;
+}
+
+.runtime-badge.electron {
+  color: #4a90d9;
+  background: rgba(74, 144, 217, 0.12);
 }
 
 .titlebar-controls {
@@ -153,6 +192,7 @@ onMounted(() => refreshMaxState())
   align-items: center;
   justify-content: center;
   transition: background .15s, color .15s;
+  -webkit-app-region: no-drag;
 }
 
 .ctrl-btn:hover {

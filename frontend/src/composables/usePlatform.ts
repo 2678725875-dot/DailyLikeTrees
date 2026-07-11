@@ -22,7 +22,12 @@ let _initialized = false
 // ════════════════════════════════════════════════════════════════════
 
 export function detectPlatform(): 'pc' | 'mobile' {
-  // 1. Tauri v2 desktop/mobile
+  // 1. Electron (always PC)
+  if (typeof window !== 'undefined' && 'electronAPI' in window) {
+    return 'pc'
+  }
+
+  // 2. Tauri v2 desktop/mobile
   if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
     const ua = navigator.userAgent || ''
     // Tauri mobile injects "tauri-mobile" in UA; desktop does not
