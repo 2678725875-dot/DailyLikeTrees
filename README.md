@@ -11,7 +11,9 @@
 [![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PixiJS](https://img.shields.io/badge/PixiJS-7.4-E72264?logo=pixiv&logoColor=white)](https://pixijs.com/)
+[![Electron](https://img.shields.io/badge/Electron-33.2-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-2.11-FFC131?logo=tauri&logoColor=white)](https://v2.tauri.app/)
+[![Capacitor](https://img.shields.io/badge/Capacitor-8.4-119EFF?logo=capacitor&logoColor=white)](https://capacitorjs.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
@@ -24,7 +26,7 @@
 
 设定一个专注目标 → 完成它 → 在你的等距「专注森林」中种下一棵树。日积月累，终成一片林。
 
-> 🖥️ 当前开发阶段：**Web 桌面端 MVP**
+> 🖥️ 当前开发阶段：**多平台 MVP — Web + Electron 桌面 + Android**
 
 ---
 
@@ -80,7 +82,8 @@ Web Audio API 多层环境音（雨声 / 溪流 / 风 / 雷 / 森林）实时混
 | **后端框架** | FastAPI | Python 异步 Web 框架 |
 | **数据库** | SQLite3 + SQLAlchemy | 轻量级，零配置 |
 | **类型验证** | Pydantic v2 | 请求 / 响应 Schema |
-| **桌面壳** | Tauri v2 | Rust + 系统 WebView，自动管理后端进程 |
+| **桌面壳** | Electron 33 + Tauri v2 | Electron 为主（内嵌 Chromium），Tauri 保留兼容 |
+| **移动端** | Capacitor 8 | PWA → 原生 Android APK |
 | **后端打包** | PyInstaller | 将 Python 后端编译为独立 exe |
 
 ---
@@ -130,24 +133,48 @@ npm run dev
 
 > ⚠️ 两个服务需要**同时运行**。前端的 API 请求通过 Vite 开发服务器代理到后端 8000 端口。
 
-### 4. 桌面应用（Tauri v2）
+### 4. 桌面应用（Electron）
 
-> 🖥️ 支持 Windows。项目已集成 Tauri v2，一键启动桌面窗口，无需手动管理前后端。
+> 🖥️ 推荐桌面方案。内嵌 Chromium 130，彻底解决 WebView2 兼容性问题，无需安装额外运行时。
 
 **开发模式：**
 
 ```bash
-cd frontend
+cd electron-app
 npm install
-npx tauri dev
+npm start
 ```
 
-Tauri 桌面窗口会自动打开，Vite HMR 热更新即时生效。
+Electron 窗口自动打开，加载 Vite dev server 或本地 `dist/`。
 
 **生产构建：**
 
 ```bash
-# 1. 构建 Python 后端为独立 exe
+# 1. 确保 backend.exe 已构建（见下方「后端打包」）
+# 2. 构建 Electron 安装包
+cd electron-app
+npm run build        # 自动构建前端 → 复制 dist → electron-builder
+```
+
+构建产物位于 `electron-app/release/`：
+- `DailyLikeTrees Setup 0.x.x.exe` — NSIS 安装包（含 backend.exe）
+- `win-unpacked/DailyLikeTrees.exe` — 绿色免安装版
+
+> 📦 应用自动启动 / 停止 backend.exe，用户**无需安装 Python** 或任何运行环境。
+
+#### Tauri v2（备选）
+
+Tauri 需要系统安装 WebView2 Runtime，如遇白屏问题推荐使用 Electron。
+
+```bash
+cd frontend
+npx tauri dev         # 开发
+npx tauri build       # 构建
+```
+
+#### 后端打包
+
+```bash
 cd backend
 pip install pyinstaller
 pyinstaller --onefile --name backend \
@@ -155,20 +182,22 @@ pyinstaller --onefile --name backend \
     --collect-all sqlalchemy --collect-all aiosqlite \
     run.py
 
-# 2. 复制 backend.exe 到 Tauri 资源目录
+# 复制到 Tauri 资源目录
 cp dist/backend.exe ../frontend/src-tauri/binaries/backend.exe
-
-# 3. 构建 Tauri 桌面安装包
-cd ../frontend
-npx tauri build
+# Electron 构建时自动读取
 ```
 
-构建产物位于 `frontend/src-tauri/target/release/bundle/`，包含：
-- `DailyLikeTrees_*.msi` — Windows 安装包
-- `DailyLikeTrees_*-setup.exe` — NSIS 安装程序
-- `DailyLikeTrees_*.exe` — 便携版（与 `backend.exe` 同目录即可运行）
+### 5. 移动端（Android）
 
-> 📦 后端已通过 PyInstaller 打包为独立 exe，用户**无需安装 Python**。应用启动时自动拉起后端，关闭时自动清理。
+> 📱 基于 Capacitor，PWA 转原生 APK。
+
+```bash
+cd frontend
+npm run android:sync    # 同步前端到 Capacitor
+npm run android:build   # 完整构建 → APK
+```
+
+APK 输出：`frontend/android/app/build/outputs/apk/debug/app-debug.apk`
 
 ---
 
@@ -176,6 +205,12 @@ npx tauri build
 
 ```
 DailyLikeTrees/
+├── electron-app/                      # Electron 桌面应用（主力）
+│   ├── main.js                        # 主进程：窗口管理 / 后端拉起 / IPC
+│   ├── preload.js                     # contextBridge API 暴露
+│   ├── package.json                   # electron-builder 构建配置
+│   └── icon.ico                       # 多分辨率应用图标
+│
 ├── frontend/                          # Vue 3 + Vite 前端
 │   ├── public/assets/
 │   │   ├── audio/                     # 音频素材（环境音 + BGM）
@@ -183,27 +218,28 @@ DailyLikeTrees/
 │   │   │   └── music/                 # calm-1 / calm-2 / calm-3
 │   │   ├── trees/species/             # 37 种树木精灵（PNG）
 │   │   └── logo.png                  # 应用图标
-│   └── src/
-│       ├── components/
-│       │   ├── timer/                 # CircularTimer / TreePreview / TreeSpeciesPicker
-│       │   ├── board/                 # TodoBoard / TodoItem / TodoAddForm
-│       │   ├── forest/                # IsometricGrid / BackgroundForest
-│       │   ├── audio/                 # AudioControlPanel
-│       │   ├── icons/                 # IconSvg 矢量图标系统
-│       │   ├── settings/              # SettingsPanel / DevToolsPanel
-│       │   └── layout/                # AppShell / AppHeader
-│       ├── composables/               # useAudioEngine / useCircularTimer / useWeatherInfo …
-│       ├── stores/                    # Pinia: timer / todos / forest / audio / settings
-│       ├── services/                  # Axios API 封装
-│       ├── types/                     # TypeScript 类型定义
-│       ├── utils/                     # 等距坐标 / 素材路径 / 树木生长 / 常量
-│       ├── views/                     # HomeView / ForestViewPage
-│       └── styles/                    # CSS 变量 / 主题 / 基础样式
-│   └── src-tauri/                     # Tauri v2 桌面壳
-│       ├── src/lib.rs                 # Rust：自动启动 / 停止后端进程
-│       ├── src/main.rs                # Windows 程序入口
-│       ├── tauri.conf.json            # 窗口尺寸 / CSP / 资源打包
-│       └── binaries/                  # backend.exe（PyInstaller 产物）
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── timer/                 # CircularTimer / TreePreview / TreeSpeciesPicker
+│   │   │   ├── board/                 # TodoBoard / TodoItem / TodoAddForm
+│   │   │   ├── forest/                # IsometricGrid / BackgroundForest
+│   │   │   ├── audio/                 # AudioControlPanel
+│   │   │   ├── icons/                 # IconSvg 矢量图标系统
+│   │   │   ├── settings/              # SettingsPanel / DevToolsPanel
+│   │   │   └── layout/                # AppShell / CustomTitleBar / FloatingBall
+│   │   ├── composables/               # useAudioEngine / useCircularTimer / useWeatherInfo …
+│   │   ├── stores/                    # Pinia: timer / todos / forest / audio / settings
+│   │   ├── services/                  # Axios API 封装
+│   │   ├── types/                     # TypeScript 类型定义
+│   │   ├── utils/                     # 等距坐标 / 素材路径 / 树木生长 / 常量
+│   │   ├── views/                     # HomeView / ForestViewPage / FloatingBallView
+│   │   └── styles/                    # CSS 变量 / 主题 / 基础样式
+│   ├── src-tauri/                     # Tauri v2 桌面壳（备选）
+│   │   ├── src/lib.rs                 # Rust：自动启动 / 停止后端进程
+│   │   ├── src/main.rs                # Windows 程序入口
+│   │   ├── tauri.conf.json            # 窗口尺寸 / CSP / 资源打包
+│   │   └── binaries/                  # backend.exe（PyInstaller 产物）
+│   └── android/                       # Capacitor Android 项目
 │
 ├── backend/                           # FastAPI + SQLite3 后端
 │   ├── app/
@@ -258,7 +294,8 @@ DailyLikeTrees/
 
 欢迎提交 Issue 和 Pull Request！当前处于 Web MVP 阶段，后续计划包括：
 
-- [ ] 移动端适配（React Native / Flutter）
+- [x] 移动端适配（Android / Capacitor）
+- [ ] iOS 适配
 - [ ] 多人专注房间
 - [ ] 更多树种 & 自定义森林主题
 - [ ] 专注统计 & 周报
