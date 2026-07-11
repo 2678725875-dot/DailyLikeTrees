@@ -1,6 +1,6 @@
 {
   "name": "dailyliketrees",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "DailyLikeTrees · 如树日常 — Electron desktop app",
   "main": "main.js",
   "author": "Ultraism",
