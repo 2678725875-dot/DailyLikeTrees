@@ -4,36 +4,97 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-DailyLikeTrees is a multi-platform focus/productivity app inspired by the Forest app. Users set a focus timer → complete it → plant a tree in their isometric "Focus Forest." Current phase: desktop Web MVP.
+DailyLikeTrees is a multi-platform focus/productivity app inspired by the Forest app. Users set a focus timer → complete it → plant a tree in their isometric "Focus Forest."
 
-**Tech stack:** Vue 3 Composition API + TypeScript + Vite (frontend), FastAPI + SQLite3 (backend), PixiJS 7.4.3 for isometric forest rendering, Web Audio API for ambient audio mixing.
+**Platforms:** Web (SPA + PWA), Electron desktop (Windows), Tauri desktop (备选), Android (Capacitor).
+
+**Tech stack:** Vue 3 Composition API + TypeScript + Vite 8 (frontend), FastAPI + SQLite3 (backend), PixiJS 7.4.3 for isometric forest rendering, Web Audio API for ambient audio mixing, Electron 33 for desktop, Capacitor 8 for Android.
 
 ## Development Commands
 
-All frontend commands run from `frontend/`. The backend runs from `backend/`.
-
 ```bash
-# Frontend
+# === Frontend (Web) ===
 cd frontend
-npm run dev              # Start Vite dev server (http://localhost:5173)
-npm run build            # Type-check + production build
-npx vue-tsc --noEmit    # TypeScript check only (no emit)
+npm run dev              # Vite dev server (http://localhost:5173)
+npm run build            # Type-check + production build (base: './')
+npm run build:pwa        # PWA build (VITE_LOCAL_BACKEND=true, IndexedDB)
+npx vue-tsc --noEmit    # TypeScript check only
 
-# Backend
+# === Backend ===
 cd backend
-uvicorn app.main:app --reload   # Start FastAPI (http://localhost:8000)
-# Swagger docs at http://localhost:8000/docs
+uvicorn app.main:app --reload   # FastAPI (http://localhost:8000)
+
+# === Electron ===
+cd electron-app
+npm start                # Dev mode (loads localhost:5173, falls back to dist)
+npm run build            # Build frontend + copy dist + electron-builder (NSIS)
+# Output: release/DailyLikeTrees Setup X.X.X.exe (installer)
+#         release/win-unpacked/DailyLikeTrees.exe (portable)
+
+# === Android ===
+cd frontend
+npm run android:sync     # Sync built frontend into Capacitor android/
+npm run android:build    # Full: build:pwa → sync → Gradle debug APK
+# APK: android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Both servers must be running for full functionality. The frontend dev server proxies to `localhost:8000` for API calls (configured in `api.ts` with hardcoded baseURL).
+The frontend dev server proxies to `localhost:8000` for API calls (hardcoded baseURL in `api.ts`). Both servers must be running for full functionality in web dev mode.
 
 ## Architecture
 
+### Runtimes & Platform Detection
+
+The app supports 4 runtime environments, detected at startup:
+
+| Priority | Runtime | Detection | `usePlatform()` |
+|----------|---------|-----------|-----------------|
+| 1 | **Electron** | `window.electronAPI` (contextBridge) | `pc` |
+| 2 | **Tauri v2** | `window.__TAURI_INTERNALS__` | `pc` (or `mobile` if UA has `tauri-mobile`) |
+| 3 | **Capacitor** | `window.Capacitor` | `mobile` |
+| 4 | **Browser** | UA sniffing + screen touch heuristic | `pc` or `mobile` |
+
+Key files:
+- [`usePlatform.ts`](frontend/src/composables/usePlatform.ts) — detection composable + `detectPlatform()` pure function used by router at module load
+- [`CustomTitleBar.vue`](frontend/src/components/layout/CustomTitleBar.vue) — window controls only render when Electron or Tauri detected
+- [`FloatingBall.vue`](frontend/src/components/layout/FloatingBall.vue) — uses `electronAPI.openFloating()` / `electronAPI.sendEvent()` for IPC
+- [`main.ts`](frontend/src/main.ts) — adds `electron-app` class to `<html>` when Electron detected
+
+### Dual-Backend API Layer
+
+[`api.ts`](frontend/src/services/api.ts) supports two backends transparently:
+
+| Mode | Trigger | Storage |
+|------|---------|---------|
+| **Remote HTTP** | Default (dev/Electron/Tauri) | FastAPI at `localhost:8000` |
+| **Local IndexedDB** | `VITE_LOCAL_BACKEND=true` (PWA/mobile) | Browser IndexedDB via `localDb.ts` |
+
+All API functions (`completeSession`, `getTrees`, `getTodos`, `updateSettings`, etc.) check `USE_LOCAL` at call time and route to the appropriate backend. The PWA build sets `VITE_LOCAL_BACKEND=true` via `.env.pwa`.
+
+### Electron App (`electron-app/`)
+
+- **`main.js`** — Main process: creates frameless `BrowserWindow` with custom title bar (`frame: false`), spawns backend (dev: Python uvicorn, prod: `backend.exe` from `process.resourcesPath`), manages floating window lifecycle, relays IPC events between main ↔ floating windows
+- **`preload.js`** — contextBridge exposing `window.electronAPI`: window controls, floating window ops, FB event relay (`sendEvent`/`onEvent`)
+- **`package.json`** — `"type": "commonjs"`, electron-builder config: NSIS target, `extraResources` for `backend.exe`, `files` includes local `dist/` copy
+
+**Build flow:** `build:frontend` → `copy:dist` (copies `../frontend/dist` → local `dist/`) → `electron-builder --win`. In production, `DIST_DIR = path.join(__dirname, 'dist')` (inside asar).
+
+**Critical:** `ELECTRON_RUN_AS_NODE=1` env var makes Electron behave as plain Node.js — `npm start` clears it (`set ELECTRON_RUN_AS_NODE=`).
+
 ### Frontend (`frontend/src/`)
 
-**Router** (`router/index.ts`): Hash-based routing (`createWebHashHistory`) — required for PWA compatibility. Two routes: `/` (HomeView) and `/forest` (ForestViewPage, lazy-loaded).
+**Router** ([`router/index.ts`](frontend/src/router/index.ts)): Hash-based (`createWebHashHistory`) for PWA compatibility. Platform-aware: PC and mobile get different view components for `/` and `/forest`. Three routes:
 
-**Pinia Stores** (5 modules, all use the composable pattern — `ref` + `computed` + functions inside `defineStore`):
+| Path | PC View | Mobile View |
+|------|---------|-------------|
+| `/` | `HomeView.vue` | `mobile/HomeView.vue` |
+| `/forest` | `ForestViewPage.vue` (lazy) | `mobile/ForestViewPage.vue` (lazy) |
+| `/floating` | `FloatingBallView.vue` (lazy) | same |
+
+**Vite config:** `base: './'` is REQUIRED — without it, Electron's `file://` protocol can't resolve absolute asset paths.
+
+**Asset paths** ([`assetPaths.ts`](frontend/src/utils/assetPaths.ts)): All paths use `${import.meta.env.BASE_URL}assets/...` — evaluates to `/assets/...` in dev, `./assets/...` in production. Never hardcode absolute paths.
+
+**Pinia Stores** (5 modules, composable pattern — `ref` + `computed` + functions inside `defineStore`):
 | Store | Key State | Notes |
 |-------|-----------|-------|
 | `timer.ts` | mode, status, targetSeconds, elapsedSeconds | State machine: idle→running→paused→completed. Auto-completes on reaching target for countdown/countup. `complete()` calls POST `/api/sessions`. Sessions under 30s are silently discarded. |
@@ -109,3 +170,9 @@ CSS custom properties on `[data-theme="dark"]` / `[data-theme="light"]` (or `:ro
 6. **Audio files are placeholders** — they don't exist yet. The engine silently handles 404s. Don't report missing audio as errors.
 
 7. **Tree growth animation** uses PixiJS ticker with ease-out cubic. Duration 700ms/tree, 55ms stagger. `forceRefresh` prop → `startGrowthAnimation()` called for all trees. Without `forceRefresh`, only new trees animate.
+
+8. **`base: './'` in vite.config.ts is mandatory** for Electron. Without it, `file://` protocol resolves `/assets/...` to the filesystem root. All JS-side asset paths must use `import.meta.env.BASE_URL` (via `assetPaths.ts`).
+
+9. **Electron `ELECTRON_RUN_AS_NODE=1`** — if this env var is set in your shell, Electron runs as plain Node.js and `require('electron')` returns a dummy string. Clear it before `npm start` or `electron .`.
+
+10. **electron-app `files` config uses local `dist/**/*`** — the build script copies `../frontend/dist` → local `dist/` before electron-builder runs. Cross-directory globs (`"../frontend/dist/**/*"`) don't work with electron-builder.
